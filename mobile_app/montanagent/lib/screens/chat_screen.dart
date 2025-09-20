@@ -181,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   context,
                   listen: false,
                 );
-                
+
                 await firestoreService.clearChatHistory();
                 geminiService.resetChat();
               } catch (e) {
