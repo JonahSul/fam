@@ -1,0 +1,316 @@
+name: 📦 Release Management
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Is this a prerelease?'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  FLUTTER_VERSION: '3.35.4'
+  WORKING_DIRECTORY: ./mobile_app/montanagent
+
+jobs:
+  # Create release version
+  create-version:
+    name: 🏷️ Create Version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      release_notes: ${{ steps.notes.outputs.release_notes }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 🏷️ Generate version number
+        id: version
+        run: |
+          # Get current version from pubspec.yaml
+          CURRENT_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Parse version parts
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment based on type
+          case "${{ github.event.inputs.version_type }}" in
+            "major")
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            "minor")
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            "patch")
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: 📝 Generate release notes
+        id: notes
+        run: |
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            echo "release_notes=${{ github.event.inputs.release_notes }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-generate release notes from commits
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$LAST_TAG" ]; then
+              NOTES=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
+            else
+              NOTES=$(git log --oneline --pretty=format:"- %s" -10)
+            fi
+            echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+            echo "$NOTES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📝 Update version in files
+        run: |
+          # Update pubspec.yaml
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.new_version }}+${{ github.run_number }}/" pubspec.yaml
+          
+          # Commit version bump
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin HEAD --tags
+
+  # Build release artifacts
+  build-release:
+    name: 🏗️ Build Release Artifacts
+    runs-on: ${{ matrix.os }}
+    needs: [create-version]
+    if: always() && (needs.create-version.result == 'success' || github.event_name == 'push')
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: web
+            build_cmd: flutter build web --release --web-renderer canvaskit
+            artifact_path: build/web
+          - os: ubuntu-latest
+            platform: android
+            build_cmd: flutter build appbundle --release
+            artifact_path: build/app/outputs/bundle/release
+          - os: ubuntu-latest
+            platform: android-apk
+            build_cmd: flutter build apk --release --split-per-abi
+            artifact_path: build/app/outputs/flutter-apk
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java (for Android)
+        if: contains(matrix.platform, 'android')
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🏗️ Build ${{ matrix.platform }}
+        run: ${{ matrix.build_cmd }}
+
+      - name: 📦 Package artifacts
+        run: |
+          mkdir -p ../release-artifacts/${{ matrix.platform }}
+          cp -r ${{ matrix.artifact_path }}/* ../release-artifacts/${{ matrix.platform }}/
+
+      - name: 📤 Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}-${{ github.sha }}
+          path: release-artifacts/${{ matrix.platform }}
+          retention-days: 90
+
+  # Create GitHub release
+  create-release:
+    name: 🚀 Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [create-version, build-release]
+    if: always() && (needs.create-version.result == 'success' || github.event_name == 'push')
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="v${{ needs.create-version.outputs.new_version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts/
+
+      - name: 📦 Create release archives
+        run: |
+          cd artifacts
+          for dir in */; do
+            if [[ $dir == release-* ]]; then
+              platform=$(echo $dir | sed 's/release-//' | sed 's/-[^-]*$//')
+              tar -czf "../montanagent-${{ steps.get_version.outputs.version }}-${platform}.tar.gz" -C "$dir" .
+            fi
+          done
+
+      - name: 🚀 Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: MontaNAgent ${{ steps.get_version.outputs.version }}
+          body: |
+            ## 🎉 What's New in ${{ steps.get_version.outputs.version }}
+            
+            ${{ needs.create-version.outputs.release_notes || 'Release notes not provided.' }}
+            
+            ## 📱 Download Options
+            
+            - **Web App**: Available at [https://montanagent.web.app](https://montanagent.web.app)
+            - **Android**: Download the APK or install from Google Play Store
+            
+            ## 🔧 Technical Details
+            
+            - Built with Flutter ${{ env.FLUTTER_VERSION }}
+            - Powered by Google Gemini AI
+            - Firebase backend integration
+            
+            ## 📊 Checksums
+            
+            | File | SHA256 |
+            | --- | --- |
+            | Web | `$(sha256sum montanagent-${{ steps.get_version.outputs.version }}-web.tar.gz | cut -d' ' -f1)` |
+            | Android Bundle | `$(sha256sum montanagent-${{ steps.get_version.outputs.version }}-android.tar.gz | cut -d' ' -f1)` |
+            | Android APK | `$(sha256sum montanagent-${{ steps.get_version.outputs.version }}-android-apk.tar.gz | cut -d' ' -f1)` |
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+
+      - name: 📤 Upload Release Assets
+        run: |
+          for file in montanagent-${{ steps.get_version.outputs.version }}-*.tar.gz; do
+            curl \
+              -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/gzip" \
+              --data-binary @"$file" \
+              "${{ steps.create_release.outputs.upload_url }}?name=$file"
+          done
+
+  # Deploy release to production
+  deploy-release:
+    name: 🚀 Deploy Release to Production
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    environment:
+      name: production
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download web artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-web-${{ github.sha }}
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
+
+      - name: 🚀 Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
+          channelId: live
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
+
+  # Post-release notifications
+  notify-release:
+    name: 📢 Notify Release
+    runs-on: ubuntu-latest
+    needs: [create-release, deploy-release]
+    if: always()
+    
+    steps:
+      - name: 🎉 Notify successful release
+        if: needs.deploy-release.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            🎉 New MontaNAgent release is live!
+            Version: ${{ needs.create-release.outputs.version }}
+            🌐 Web: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app
+            📦 GitHub: https://github.com/${{ github.repository }}/releases/latest
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 🚨 Notify failed release
+        if: needs.deploy-release.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '❌ MontaNAgent release deployment failed!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

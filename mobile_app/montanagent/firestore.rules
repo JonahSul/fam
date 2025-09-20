@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can read/write their own chat messages
+      match /chatMessages/{messageId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Public meeting data (if you integrate with BMLT data)
+    match /meetings/{meetingId} {
+      allow read: if true;
+      allow write: if false; // Only allow reads for public meeting data
+    }
+  }
+}

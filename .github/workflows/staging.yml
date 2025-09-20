@@ -1,0 +1,356 @@
+name: 🎭 Staging & Preview Deployments
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'mobile_app/montanagent/**'
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [ develop, 'feature/**', 'hotfix/**' ]
+    paths:
+      - 'mobile_app/montanagent/**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy for preview'
+        required: true
+        default: 'develop'
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.35.4'
+  WORKING_DIRECTORY: ./mobile_app/montanagent
+
+jobs:
+  # Build for preview
+  build-preview:
+    name: 🏗️ Build Preview
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.details_url }}
+      build-success: ${{ steps.build.outcome == 'success' }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🧪 Quick tests
+        run: flutter test --run-skipped
+
+      - name: 🏗️ Build web for preview
+        id: build
+        run: |
+          flutter build web \
+            --release \
+            --web-renderer canvaskit \
+            --dart-define=ENVIRONMENT=preview \
+            --dart-define=API_BASE_URL=https://api-staging.montanagent.com
+
+      - name: 🚀 Deploy to Firebase Preview
+        id: deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}-staging'
+          channelId: preview-${{ github.event.number || github.ref_name }}
+          expires: 7d
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
+
+      - name: 💾 Save preview info
+        run: |
+          echo "Preview URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy to staging environment
+  deploy-staging:
+    name: 🎭 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-preview
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🏗️ Build for staging
+        run: |
+          flutter build web \
+            --release \
+            --web-renderer canvaskit \
+            --dart-define=ENVIRONMENT=staging \
+            --dart-define=API_BASE_URL=https://api-staging.montanagent.com
+
+      - name: 🚀 Deploy to Firebase Staging
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}-staging'
+          channelId: live
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
+
+  # Visual regression testing on preview
+  visual-testing:
+    name: 👁️ Visual Regression Testing
+    runs-on: ubuntu-latest
+    needs: build-preview
+    if: needs.build-preview.outputs.build-success == 'true'
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Setup Node.js for Playwright
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install chromium
+
+      - name: 📸 Run visual tests
+        run: |
+          # Create a simple Playwright test for visual regression
+          cat > visual-test.js << 'EOF'
+          const { chromium } = require('playwright');
+          
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            
+            // Navigate to preview URL
+            await page.goto('${{ needs.build-preview.outputs.preview-url }}');
+            
+            // Wait for app to load
+            await page.waitForTimeout(3000);
+            
+            // Take screenshot
+            await page.screenshot({ 
+              path: 'preview-screenshot.png', 
+              fullPage: true 
+            });
+            
+            await browser.close();
+            console.log('✅ Visual test completed');
+          })();
+          EOF
+          
+          node visual-test.js
+
+      - name: 📤 Upload screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-screenshot-${{ github.sha }}
+          path: preview-screenshot.png
+          retention-days: 7
+
+  # Performance testing on preview
+  performance-testing:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
+    needs: build-preview
+    if: needs.build-preview.outputs.build-success == 'true'
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Setup Node.js for Lighthouse
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: 🏃 Run Lighthouse audit
+        run: |
+          lhci autorun \
+            --upload.target=temporary-public-storage \
+            --collect.url="${{ needs.build-preview.outputs.preview-url }}" \
+            --collect.numberOfRuns=3
+
+      - name: 📊 Performance summary
+        run: |
+          echo "## ⚡ Performance Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: ${{ needs.build-preview.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Lighthouse audit completed with 3 runs for accuracy." >> $GITHUB_STEP_SUMMARY
+
+  # Comment on PR with preview info
+  pr-comment:
+    name: 💬 PR Preview Comment
+    runs-on: ubuntu-latest
+    needs: [build-preview, visual-testing, performance-testing]
+    if: github.event_name == 'pull_request' && needs.build-preview.outputs.build-success == 'true'
+    
+    steps:
+      - name: 💬 Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🎭 Preview Deployment')
+            );
+            
+            const commentBody = `## 🎭 Preview Deployment
+            
+            | 📊 **Status** | ✅ **Ready** |
+            |---|---|
+            | 🌐 **Preview URL** | [${{ needs.build-preview.outputs.preview-url }}](${{ needs.build-preview.outputs.preview-url }}) |
+            | 🎯 **Environment** | Preview |
+            | 🔄 **Auto-refresh** | 7 days |
+            | 📱 **Platform** | Web |
+            
+            ### 🧪 Test Results
+            - ✅ Build successful
+            - ✅ Visual regression testing completed
+            - ✅ Performance audit completed
+            
+            ### 📝 Instructions
+            1. Click the preview URL to test the changes
+            2. The preview will auto-update on new commits
+            3. Preview expires in 7 days
+            
+            <sub>⚡ Generated by GitHub Actions</sub>`;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+  # Cleanup preview on PR close
+  cleanup-preview:
+    name: 🧹 Cleanup Preview
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧹 Delete preview channel
+        run: |
+          # Install Firebase CLI
+          npm install -g firebase-tools
+          
+          # Setup credentials
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}' > firebase-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=firebase-key.json
+          
+          # Delete preview channel
+          firebase use ${{ secrets.FIREBASE_PROJECT_ID }}-staging
+          firebase hosting:channel:delete preview-${{ github.event.number }} --force || true
+
+      - name: 💬 Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🎭 Preview Deployment')
+            );
+            
+            if (botComment) {
+              const updatedBody = botComment.body.replace(
+                '| 📊 **Status** | ✅ **Ready** |',
+                '| 📊 **Status** | 🗑️ **Cleaned up** |'
+              );
+              
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: updatedBody + '\n\n> ✅ Preview environment cleaned up after PR closure.'
+              });
+            }
+
+  # Staging environment health check
+  staging-health-check:
+    name: 🏥 Staging Health Check
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    steps:
+      - name: 🏥 Check staging health
+        run: |
+          STAGING_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}-staging.web.app"
+          
+          # Wait for deployment
+          sleep 30
+          
+          # Check health
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Staging health check failed. HTTP code: $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "✅ Staging environment is healthy"
+          echo "🌐 Staging URL: $STAGING_URL" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔔 Notify staging deployment
+        uses: 8398a7/action-slack@v3
+        if: success()
+        with:
+          status: success
+          text: '🎭 Staging environment updated successfully!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,256 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'mobile_app/montanagent/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'mobile_app/montanagent/**'
+      - '.github/workflows/**'
+
+env:
+  FLUTTER_VERSION: '3.35.4'
+  WORKING_DIRECTORY: ./mobile_app/montanagent
+
+jobs:
+  # Job 1: Code Quality and Linting
+  analyze:
+    name: 📊 Code Analysis
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔍 Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: 🕵️ Analyze project source
+        run: flutter analyze --fatal-infos
+
+      - name: 🧪 Run custom lint rules
+        run: dart run custom_lint
+
+  # Job 2: Testing
+  test:
+    name: 🧪 Testing Suite
+    runs-on: ubuntu-latest
+    needs: analyze
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🧪 Run unit tests
+        run: flutter test --coverage --test-randomize-ordering-seed random
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
+          flags: flutter
+          name: montanagent-coverage
+
+  # Job 3: Build for Multiple Platforms
+  build:
+    name: 🏗️ Build Applications
+    runs-on: ${{ matrix.os }}
+    needs: [analyze, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build-type: web
+            build-command: flutter build web --release --web-renderer canvaskit
+            artifact-path: build/web
+            artifact-name: web-build
+          - os: ubuntu-latest
+            build-type: android
+            build-command: flutter build apk --release
+            artifact-path: build/app/outputs/flutter-apk
+            artifact-name: android-apk
+          - os: ubuntu-latest
+            build-type: android-bundle
+            build-command: flutter build appbundle --release
+            artifact-path: build/app/outputs/bundle/release
+            artifact-name: android-bundle
+    
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🏗️ Build ${{ matrix.build-type }}
+        run: ${{ matrix.build-command }}
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ env.WORKING_DIRECTORY }}/${{ matrix.artifact-path }}
+          retention-days: 30
+
+  # Job 4: Security Scanning
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: analyze
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔒 Run security audit
+        run: flutter pub deps --json | dart pub global run pana --json
+
+      - name: 🛡️ Check for known vulnerabilities
+        run: dart pub audit
+
+  # Job 5: Deploy to Staging (Web)
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    environment:
+      name: staging
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
+
+      - name: 🚀 Deploy to Firebase Hosting (Staging)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}-staging'
+          channelId: live
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
+
+  # Job 6: Deploy to Production (Web)
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    environment:
+      name: production
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
+
+      - name: 🚀 Deploy to Firebase Hosting (Production)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
+          channelId: live
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
+
+  # Job 7: Post-deployment validation
+  validate-deployment:
+    name: ✅ Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏥 Health Check
+        run: |
+          curl -f https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ || exit 1
+          echo "✅ Production deployment is healthy"
+
+      - name: 🔔 Notify deployment success
+        uses: 8398a7/action-slack@v3
+        if: success()
+        with:
+          status: success
+          text: '🎉 MontaNAgent successfully deployed to production!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 🚨 Notify deployment failure
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: failure
+          text: '❌ MontaNAgent deployment to production failed!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
