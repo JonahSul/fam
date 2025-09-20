@@ -47,6 +47,11 @@ jobs:
       - name: 🧪 Run custom lint rules
         run: dart run custom_lint
 
+      - name: 📋 Activate and run pana (Package Analysis)
+        run: |
+          dart pub global activate pana
+          dart pub global run pana . --json
+
   # Job 2: Testing
   test:
     name: 🧪 Testing Suite
