@@ -9,3 +9,5 @@ pubspec.lock
 *.iml
 *.log
 *.tmp
+node_modules/
+*.class
