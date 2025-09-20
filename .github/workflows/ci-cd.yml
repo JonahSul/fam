@@ -156,7 +156,7 @@ jobs:
           cache: true
 
       - name: 📦 Install dependencies
-        run: flutter pub get
+        run: flutter pub get && dart pub global activate pana
 
       - name: 🔒 Run security audit
         run: flutter pub deps --json | dart pub global run pana --json
