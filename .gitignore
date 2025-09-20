@@ -25,11 +25,15 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment files (local configs)
-/.env.*
+.env
 
-# Node modules
-/node_modules/
-/functions/node_modules/
+# Node Modules
+node_modules/
+
+# Genkit
+.genkit/
 
 # Build artifacts
-build/*
+dist/
+build/
+out/
