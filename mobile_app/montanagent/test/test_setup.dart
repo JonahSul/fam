@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 class TestSetup {
   static bool _initialized = false;
 
-  /// Initialize test environment 
+  /// Initialize test environment
   static Future<void> setupFirebase() async {
     if (_initialized) return;
 
@@ -19,10 +19,7 @@ class TestSetup {
     bool signedIn = false,
     MockUser? mockUser,
   }) {
-    return MockFirebaseAuth(
-      signedIn: signedIn,
-      mockUser: mockUser,
-    );
+    return MockFirebaseAuth(signedIn: signedIn, mockUser: mockUser);
   }
 
   /// Create a mock user for testing
@@ -31,10 +28,6 @@ class TestSetup {
     String email = 'test@example.com',
     String displayName = 'Test User',
   }) {
-    return MockUser(
-      uid: uid,
-      email: email,
-      displayName: displayName,
-    );
+    return MockUser(uid: uid, email: email, displayName: displayName);
   }
 }

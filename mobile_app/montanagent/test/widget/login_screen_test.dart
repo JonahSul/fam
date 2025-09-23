@@ -26,9 +26,7 @@ void main() {
       expect(find.text('Continue as Guest'), findsOneWidget);
     });
 
-    testWidgets('should handle form validation', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('should handle form validation', (WidgetTester tester) async {
       await tester.pumpWidget(
         ChangeNotifierProvider(
           create: (_) => MockAuthService(),

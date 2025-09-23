@@ -13,14 +13,14 @@ import 'mocks/mock_auth_service.dart';
 
 void main() {
   group('MontaNAgent App Tests', () {
-    testWidgets('App smoke test - displays login screen', (WidgetTester tester) async {
+    testWidgets('App smoke test - displays login screen', (
+      WidgetTester tester,
+    ) async {
       // Build a simple test app that doesn't require Firebase
       await tester.pumpWidget(
         ChangeNotifierProvider<MockAuthService>(
           create: (_) => MockAuthService(),
-          child: const MaterialApp(
-            home: LoginScreen(),
-          ),
+          child: const MaterialApp(home: LoginScreen()),
         ),
       );
 
@@ -33,15 +33,15 @@ void main() {
       // The test passes if no exceptions are thrown during app initialization
     });
 
-    testWidgets('App handles authentication state changes', (WidgetTester tester) async {
+    testWidgets('App handles authentication state changes', (
+      WidgetTester tester,
+    ) async {
       final mockAuthService = MockAuthService();
-      
+
       await tester.pumpWidget(
         ChangeNotifierProvider<MockAuthService>.value(
           value: mockAuthService,
-          child: const MaterialApp(
-            home: LoginScreen(),
-          ),
+          child: const MaterialApp(home: LoginScreen()),
         ),
       );
 
@@ -49,7 +49,7 @@ void main() {
 
       // Initially should show login screen
       expect(find.byType(LoginScreen), findsOneWidget);
-      
+
       // Verify the auth service is not authenticated
       expect(mockAuthService.isAuthenticated, false);
     });

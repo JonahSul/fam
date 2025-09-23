@@ -35,7 +35,10 @@ class MockAuthService extends ChangeNotifier {
   }
 
   // Mock register method
-  Future<void> createUserWithEmailAndPassword(String email, String password) async {
+  Future<void> createUserWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     _isAuthenticated = true;
     notifyListeners();
   }
