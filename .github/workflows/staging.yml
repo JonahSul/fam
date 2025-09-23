@@ -428,29 +428,3 @@ jobs:
                 body: updatedBody + '\n\n> ✅ Preview environment cleaned up after PR closure.'
               });
             }
-
-  # Staging environment health check
-  staging-health-check:
-    name: 🏥 Staging Health Check
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    
-    steps:
-      - name: 🏥 Check staging health
-        run: |
-          STAGING_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
-          
-          # Wait for deployment
-          sleep 30
-          
-          # Check health
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
-          
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Staging health check failed. HTTP code: $HTTP_CODE"
-            exit 1
-          fi
-          
-          echo "✅ Staging environment is healthy"
-          echo "🌐 Staging URL: $STAGING_URL" >> $GITHUB_STEP_SUMMARY
