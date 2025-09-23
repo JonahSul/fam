@@ -4,27 +4,9 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'mobile      - name: 📋 Save deployment info
-        run: |
-          echo "## 🚀 Deployment Information" >> $GITHUB_STEP_SUMMARY
-          echo "Preview URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
-          echo "Details URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "DEBUG: Deploy step outputs:"
-          echo "url=${{ steps.deploy.outputs.url }}"
-          echo "details_url=${{ steps.deploy.outputs.details_url }}"ontanagent/**'
-    types: [opened, synchronize, reopened, closed]
-  push:
-    branches: [ develop, 'feature/**', 'hotfix/**' ]
-    paths:
       - 'mobile_app/montanagent/**'
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to deploy for preview'
-        required: true
-        default: 'develop'
-        type: string
+      - '.github/workflows/**'
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
