@@ -56,7 +56,7 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --web-renderer canvaskit \
+            --wasm \
             --dart-define=ENVIRONMENT=preview \
             --dart-define=API_BASE_URL=https://api-staging.montanagent.com
 
