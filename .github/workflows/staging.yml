@@ -30,14 +30,14 @@ env:
   WORKING_DIRECTORY: ./mobile_app/montanagent
 
 jobs:
-  # Build for preview
-  build-preview:
-    name: 🏗️ Build Preview
+  # Stage 1: Build and Test (ONCE)
+  build-and-test:
+    name: 🏗️ Build & Test
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
     outputs:
-      preview-url: ${{ steps.deploy.outputs.url }}
       build-success: ${{ steps.build.outcome == 'success' }}
+      test-success: ${{ steps.test.outcome == 'success' }}
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}
@@ -55,10 +55,17 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
 
-      - name: 🧪 Quick tests
-        run: flutter test --run-skipped
+      - name: 🔍 Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
 
-      - name: 🏗️ Build web for preview
+      - name: 🕵️ Analyze project source
+        run: flutter analyze --fatal-infos
+
+      - name: 🧪 Run tests
+        id: test
+        run: flutter test --coverage --test-randomize-ordering-seed random
+
+      - name: 🏗️ Build web for deployment
         id: build
         run: |
           flutter build web \
@@ -66,6 +73,37 @@ jobs:
             --wasm \
             --dart-define=ENVIRONMENT=preview \
             --dart-define=API_BASE_URL=https://api-staging.montanagent.com
+
+      - name: 📦 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: steps.build.outcome == 'success'
+        with:
+          name: web-build-${{ github.sha }}
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
+          retention-days: 7
+
+  # Stage 2: Deploy Preview (Uses build artifact)
+  deploy-preview:
+    name: 🚀 Deploy Preview
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: needs.build-and-test.outputs.build-success == 'success'
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.url }}
+      details-url: ${{ steps.deploy.outputs.details_url }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-${{ github.sha }}
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
 
       - name: 🚀 Deploy to Firebase Preview
         id: deploy
@@ -78,72 +116,23 @@ jobs:
           expires: 7d
           entryPoint: ${{ env.WORKING_DIRECTORY }}
 
-      - name: 💾 Save preview info
+      - name: � Save deployment info
         run: |
-          echo "Preview URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "Live URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY  
+          echo "## 🚀 Deployment Information" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Details URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
           echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "Available outputs:" >> $GITHUB_STEP_SUMMARY
-          echo "details_url: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "url: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
 
-  # Deploy to staging environment
-  deploy-staging:
-    name: 🎭 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build-preview
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: staging
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-    
-    steps:
-      - name: 📚 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: 📦 Install dependencies
-        run: flutter pub get
-
-      - name: 🏗️ Build for staging
-        run: |
-          flutter build web \
-            --release \
-            --wasm \
-            --dart-define=ENVIRONMENT=staging \
-            --dart-define=API_BASE_URL=https://api-staging.montanagent.com
-
-      - name: 🚀 Deploy to Firebase Staging
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
-          channelId: live
-          entryPoint: ${{ env.WORKING_DIRECTORY }}
-
-  # Visual regression testing on preview
+  # Stage 3: Quality Assurance (Parallel tests on deployed preview)
   visual-testing:
-    name: 👁️ Visual Regression Testing
+    name: 👁️ Visual Testing
     runs-on: ubuntu-latest
-    needs: build-preview
-    if: needs.build-preview.outputs.build-success == 'true'
+    needs: [build-and-test, deploy-preview]
+    if: needs.deploy-preview.outputs.preview-url != ''
     
     steps:
       - name: 📚 Checkout repository
         uses: actions/checkout@v4
-
-      - name: 🔍 Debug outputs from build-preview
-        run: |
-          echo "Preview URL: '${{ needs.build-preview.outputs.preview-url }}'"
-          echo "Build Success: '${{ needs.build-preview.outputs.build-success }}'"
 
       - name: 🌐 Setup Node.js for Playwright
         uses: actions/setup-node@v4
@@ -155,19 +144,12 @@ jobs:
           npm install playwright
           npx playwright install chromium
 
-      - name: 📸 Run visual tests
+      - name: � Run visual tests
+        env:
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
         run: |
-          # Get the preview URL
-          PREVIEW_URL="${{ needs.build-preview.outputs.preview-url }}"
-          
-          if [ -z "$PREVIEW_URL" ]; then
-            echo "❌ No preview URL available, skipping visual test"
-            exit 1
-          fi
-          
           echo "🔍 Testing URL: $PREVIEW_URL"
           
-          # Create a simple Playwright test for visual regression
           cat > visual-test.js << EOF
           const { chromium } = require('playwright');
           
@@ -178,16 +160,13 @@ jobs:
             try {
               console.log('🌐 Navigating to: $PREVIEW_URL');
               
-              // Navigate to preview URL
               await page.goto('$PREVIEW_URL', { 
                 waitUntil: 'networkidle',
                 timeout: 30000 
               });
               
-              // Wait for app to load
               await page.waitForTimeout(5000);
               
-              // Take screenshot
               await page.screenshot({ 
                 path: 'preview-screenshot.png', 
                 fullPage: true 
@@ -198,6 +177,88 @@ jobs:
               console.error('❌ Visual test failed:', error.message);
               process.exit(1);
             } finally {
+              await browser.close();
+            }
+          })();
+          EOF
+          
+          node visual-test.js
+
+      - name: 📤 Upload screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-${{ github.sha }}
+          path: preview-screenshot.png
+          retention-days: 7
+
+  performance-testing:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
+    needs: [build-and-test, deploy-preview]
+    if: needs.deploy-preview.outputs.preview-url != ''
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Setup Node.js for Lighthouse
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: 🏃 Run Lighthouse audit
+        env:
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+        run: |
+          echo "🔍 Running Lighthouse audit on: $PREVIEW_URL"
+          
+          lhci collect \
+            --url="$PREVIEW_URL" \
+            --numberOfRuns=3
+          
+          lhci upload \
+            --target=temporary-public-storage
+
+      - name: 📊 Performance summary
+        run: |
+          echo "## ⚡ Performance Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: ${{ needs.deploy-preview.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Lighthouse audit completed with 3 runs for accuracy." >> $GITHUB_STEP_SUMMARY
+
+  # Stage 4: Deploy to Staging (Only on develop branch)
+  deploy-staging:
+    name: 🎭 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-test, visual-testing, performance-testing]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-${{ github.sha }}
+          path: ${{ env.WORKING_DIRECTORY }}/build/web
+
+      - name: 🚀 Deploy to Firebase Staging
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
+          channelId: live
+          entryPoint: ${{ env.WORKING_DIRECTORY }}
               await browser.close();
             }
           })();
