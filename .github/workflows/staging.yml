@@ -86,11 +86,12 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}
     
     steps:
-      - name: � Debug job conditions
+      - name: 🔍 Debug job conditions
+        working-directory: .
         run: |
           echo "Build success output: ${{ needs.build-and-test.outputs.build-success }}"
           echo "Test success output: ${{ needs.build-and-test.outputs.test-success }}"
-          echo "Build result: ${{ needs.build-and-test.result }}"
+          echo "Build/test result: ${{ needs.build-and-test.result }}" 
           
       - name: �📚 Checkout repository
         uses: actions/checkout@v4
