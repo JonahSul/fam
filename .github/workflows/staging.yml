@@ -65,8 +65,8 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}'
-          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}-staging'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
           channelId: preview-${{ github.event.number || github.ref_name }}
           expires: 7d
           entryPoint: ${{ env.WORKING_DIRECTORY }}
@@ -105,7 +105,7 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --web-renderer canvaskit \
+            --wasm \
             --dart-define=ENVIRONMENT=staging \
             --dart-define=API_BASE_URL=https://api-staging.montanagent.com
 
@@ -113,8 +113,8 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}'
-          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}-staging'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
           channelId: live
           entryPoint: ${{ env.WORKING_DIRECTORY }}
 
@@ -284,11 +284,11 @@ jobs:
           npm install -g firebase-tools
           
           # Setup credentials
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}' > firebase-key.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=firebase-key.json
           
           # Delete preview channel
-          firebase use ${{ secrets.FIREBASE_PROJECT_ID }}-staging
+          firebase use ${{ secrets.FIREBASE_PROJECT_ID }}
           firebase hosting:channel:delete preview-${{ github.event.number }} --force || true
 
       - name: 💬 Update PR comment
@@ -330,7 +330,7 @@ jobs:
     steps:
       - name: 🏥 Check staging health
         run: |
-          STAGING_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}-staging.web.app"
+          STAGING_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
           
           # Wait for deployment
           sleep 30
