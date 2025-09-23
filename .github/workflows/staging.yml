@@ -142,7 +142,7 @@ jobs:
 
       - name: 📦 Install Playwright
         run: |
-          nnpm install playwright
+          npm install playwright
           npx playwright install chromium
           
       - name: 🎭 Run visual tests
