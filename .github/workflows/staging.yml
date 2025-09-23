@@ -4,7 +4,15 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'mobile_app/montanagent/**'
+      - 'mobile      - name: 📋 Save deployment info
+        run: |
+          echo "## 🚀 Deployment Information" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Details URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "DEBUG: Deploy step outputs:"
+          echo "url=${{ steps.deploy.outputs.url }}"
+          echo "details_url=${{ steps.deploy.outputs.details_url }}"ontanagent/**'
     types: [opened, synchronize, reopened, closed]
   push:
     branches: [ develop, 'feature/**', 'hotfix/**' ]
@@ -36,8 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
     outputs:
-      build-success: ${{ steps.build.outcome == 'success' }}
-      test-success: ${{ steps.test.outcome == 'success' }}
+      build-success: ${{ steps.build.outcome }}
+      test-success: ${{ steps.test.outcome }}
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}
@@ -96,7 +104,13 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}
     
     steps:
-      - name: 📚 Checkout repository
+      - name: � Debug job conditions
+        run: |
+          echo "Build success output: ${{ needs.build-and-test.outputs.build-success }}"
+          echo "Test success output: ${{ needs.build-and-test.outputs.test-success }}"
+          echo "Build result: ${{ needs.build-and-test.result }}"
+          
+      - name: �📚 Checkout repository
         uses: actions/checkout@v4
 
       - name: 📥 Download build artifacts
@@ -128,7 +142,7 @@ jobs:
     name: 👁️ Visual Testing
     runs-on: ubuntu-latest
     needs: [build-and-test, deploy-preview]
-    if: needs.deploy-preview.outputs.preview-url != ''
+    if: needs.deploy-preview.result == 'success'
     
     steps:
       - name: 📚 Checkout repository
@@ -196,7 +210,7 @@ jobs:
     name: ⚡ Performance Testing
     runs-on: ubuntu-latest
     needs: [build-and-test, deploy-preview]
-    if: needs.deploy-preview.outputs.preview-url != ''
+    if: needs.deploy-preview.result == 'success'
     
     steps:
       - name: 📚 Checkout repository
@@ -234,7 +248,7 @@ jobs:
     name: 🎭 Deploy to Staging
     runs-on: ubuntu-latest
     needs: [build-and-test, visual-testing, performance-testing]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/issue3') && github.event_name == 'push'
     environment:
       name: staging
     defaults:
@@ -265,7 +279,7 @@ jobs:
     name: 💬 PR Preview Comment
     runs-on: ubuntu-latest
     needs: [deploy-preview, visual-testing, performance-testing]
-    if: github.event_name == 'pull_request' && needs.deploy-preview.outputs.preview-url != ''
+    if: always() && github.event_name == 'pull_request' && needs.deploy-preview.result == 'success'
     
     steps:
       - name: 💬 Comment on PR
