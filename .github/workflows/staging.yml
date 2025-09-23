@@ -83,7 +83,7 @@ jobs:
       details-url: ${{ steps.deploy.outputs.details_url }}
     defaults:
       run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
+        working-directory: .
     
     steps:
       - name: 🔍 Debug job conditions
