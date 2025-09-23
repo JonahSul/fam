@@ -142,9 +142,9 @@ jobs:
 
       - name: 📦 Install Playwright
         run: |
-          npm ci
-          npx playwright install --with-deps
-
+          nnpm install playwright
+          npx playwright install chromium
+          
       - name: 🎭 Run visual tests
         env:
           PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
