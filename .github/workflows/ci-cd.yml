@@ -95,7 +95,7 @@ jobs:
         include:
           - os: ubuntu-latest
             build-type: web
-            build-command: flutter build web --release --web-renderer canvaskit
+            build-command: flutter build web --release --wasm
             artifact-path: build/web
             artifact-name: web-build
           - os: ubuntu-latest
@@ -157,6 +157,9 @@ jobs:
 
       - name: 📦 Install dependencies
         run: flutter pub get && dart pub global activate pana
+
+      - name: ✅ Enable pana
+        run: dart pub global activate pana
 
       - name: 🔒 Run security audit
         run: flutter pub deps --json | dart pub global run pana --json
