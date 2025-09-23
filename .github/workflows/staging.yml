@@ -102,6 +102,7 @@ jobs:
           name: web-build-${{ github.sha }}
           path: ${{ env.WORKING_DIRECTORY }}/build/web
 
+# ...existing code...
       - name: 🚀 Deploy to Firebase Preview
         id: deploy
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -113,12 +114,15 @@ jobs:
           expires: 7d
           entryPoint: ${{ env.WORKING_DIRECTORY }}
 
-      - name: � Save deployment info
+      - name: 📋 Save deployment info
         run: |
           echo "## 🚀 Deployment Information" >> $GITHUB_STEP_SUMMARY
           echo "Preview URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "Details URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
           echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "DEBUG: Deploy step outputs:"
+          echo "url=${{ steps.deploy.outputs.url }}"
+          echo "details_url=${{ steps.deploy.outputs.details_url }}"
 
   # Stage 3: Quality Assurance (Parallel tests on deployed preview)
   visual-testing:
@@ -138,8 +142,8 @@ jobs:
 
       - name: 📦 Install Playwright
         run: |
-          npm install playwright
-          npx playwright install chromium
+          npm ci
+          npx playwright install --with-deps
 
       - name: 🎭 Run visual tests
         env:
