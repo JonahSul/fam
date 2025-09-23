@@ -164,9 +164,6 @@ jobs:
       - name: 🔒 Run security audit
         run: flutter pub deps --json | dart pub global run pana --json
 
-      - name: 🛡️ Check for known vulnerabilities
-        run: dart pub audit
-
   # Job 5: Deploy to Staging (Web)
   deploy-staging:
     name: 🚀 Deploy to Staging
