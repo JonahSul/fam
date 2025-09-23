@@ -87,13 +87,12 @@ jobs:
     
     steps:
       - name: 🔍 Debug job conditions
-        working-directory: .
         run: |
           echo "Build success output: ${{ needs.build-and-test.outputs.build-success }}"
           echo "Test success output: ${{ needs.build-and-test.outputs.test-success }}"
           echo "Build/test result: ${{ needs.build-and-test.result }}" 
           
-      - name: �📚 Checkout repository
+      - name: 📚 Checkout repository
         uses: actions/checkout@v4
 
       - name: 📥 Download build artifacts
@@ -102,7 +101,6 @@ jobs:
           name: web-build-${{ github.sha }}
           path: ${{ env.WORKING_DIRECTORY }}/build/web
 
-# ...existing code...
       - name: 🚀 Deploy to Firebase Preview
         id: deploy
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -123,6 +121,7 @@ jobs:
           echo "DEBUG: Deploy step outputs:"
           echo "url=${{ steps.deploy.outputs.url }}"
           echo "details_url=${{ steps.deploy.outputs.details_url }}"
+          echo "expire_time=${{ steps.deploy.outputs.expire_time }}"
 
   # Stage 3: Quality Assurance (Parallel tests on deployed preview)
   visual-testing:
@@ -135,6 +134,12 @@ jobs:
       - name: 📚 Checkout repository
         uses: actions/checkout@v4
 
+      - name: 🔍 Debug preview URL
+        run: |
+          echo "Preview URL from deploy-preview: '${{ needs.deploy-preview.outputs.preview-url }}'"
+          echo "Details URL from deploy-preview: '${{ needs.deploy-preview.outputs.details-url }}'"
+          echo "Deploy-preview job result: '${{ needs.deploy-preview.result }}'"
+
       - name: 🌐 Setup Node.js for Playwright
         uses: actions/setup-node@v4
         with:
@@ -142,6 +147,7 @@ jobs:
 
       - name: 📦 Install Playwright
         run: |
+          npm init -y
           npm install playwright
           npx playwright install chromium
           
@@ -149,23 +155,40 @@ jobs:
         env:
           PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
         run: |
-          echo "🔍 Testing URL: $PREVIEW_URL"
+          echo "🔍 Testing URL: '$PREVIEW_URL'"
           
-          cat > visual-test.js << EOF
+          # Validate URL before proceeding
+          if [ -z "$PREVIEW_URL" ] || [ "$PREVIEW_URL" = "null" ] || [ "$PREVIEW_URL" = "" ]; then
+            echo "❌ Preview URL is empty, null, or invalid: '$PREVIEW_URL'"
+            echo "Available outputs from deploy-preview job:"
+            echo "  preview-url: '${{ needs.deploy-preview.outputs.preview-url }}'"
+            echo "  details-url: '${{ needs.deploy-preview.outputs.details-url }}'"
+            exit 1
+          fi
+          
+          # Validate URL format
+          if [[ ! "$PREVIEW_URL" =~ ^https?:// ]]; then
+            echo "❌ Preview URL is not a valid HTTP/HTTPS URL: '$PREVIEW_URL'"
+            exit 1
+          fi
+          
+          cat > visual-test.js << 'EOF'
           const { chromium } = require('playwright');
-          
+
           (async () => {
             const browser = await chromium.launch();
             const page = await browser.newPage();
             
             try {
-              console.log('🌐 Navigating to: $PREVIEW_URL');
+              const url = process.env.PREVIEW_URL;
+              console.log(`🌐 Navigating to: ${url}`);
               
-              await page.goto('$PREVIEW_URL', { 
+              await page.goto(url, { 
                 waitUntil: 'networkidle',
                 timeout: 30000 
               });
               
+              // Wait for Flutter app to load
               await page.waitForTimeout(5000);
               
               await page.screenshot({ 
@@ -192,6 +215,7 @@ jobs:
           name: visual-test-${{ github.sha }}
           path: preview-screenshot.png
           retention-days: 7
+# ...existing code...
 
   performance-testing:
     name: ⚡ Performance Testing
