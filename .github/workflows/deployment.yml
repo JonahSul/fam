@@ -21,6 +21,13 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+  checks: write
+  statuses: write
+  deployments: write
+  pull-requests: write
+
 env:
   FLUTTER_VERSION: '3.35.4'
   WORKING_DIRECTORY: ./mobile_app/montanagent
