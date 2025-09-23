@@ -234,10 +234,21 @@ jobs:
 
       - name: 🏃 Run Lighthouse audit
         run: |
-          lhci autorun \
-            --upload.target=temporary-public-storage \
-            --collect.url="${{ needs.build-preview.outputs.preview-url }}" \
-            --collect.numberOfRuns=3
+          PREVIEW_URL="${{ needs.build-preview.outputs.preview-url }}"
+          
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "❌ No preview URL available, skipping performance test"
+            exit 1
+          fi
+          
+          echo "🔍 Running Lighthouse audit on: $PREVIEW_URL"
+          
+          lhci collect \
+            --url="$PREVIEW_URL" \
+            --numberOfRuns=3
+          
+          lhci upload \
+            --target=temporary-public-storage
 
       - name: 📊 Performance summary
         run: |
@@ -382,12 +393,3 @@ jobs:
           
           echo "✅ Staging environment is healthy"
           echo "🌐 Staging URL: $STAGING_URL" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔔 Notify staging deployment
-        uses: 8398a7/action-slack@v3
-        if: success()
-        with:
-          status: success
-          text: '🎭 Staging environment updated successfully!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
