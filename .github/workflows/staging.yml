@@ -111,12 +111,12 @@ jobs:
         id: save-info
         run: |
           echo "## 🚀 Deployment Information" >> $GITHUB_STEP_SUMMARY
-          echo "Preview URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: ${{ toJson(steps.deploy.outputs.urls)[0] }}" >> $GITHUB_STEP_SUMMARY
           echo "Details URL: ${{ steps.deploy.outputs.details_url }}" >> $GITHUB_STEP_SUMMARY
           echo "Channel ID: preview-${{ github.event.number || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "Debug Outputs: ${{ toJson(steps.deploy.outputs) }}" >> $GITHUB_STEP_SUMMARY
           echo "DEBUG: Deploy step outputs:"
-          echo "preview-url=${{ steps.deploy.outputs.preview_url }}" >> "$GITHUB_OUTPUT"
+          echo "preview-url=${{ toJson(steps.deploy.outputs.urls)[0] }}" >> "$GITHUB_OUTPUT"
           echo "details-url=${{ steps.deploy.outputs.details_url }}" >> "$GITHUB_OUTPUT"
           echo "expire-time=${{ steps.deploy.outputs.expire_time }}" >> "$GITHUB_OUTPUT"
 
