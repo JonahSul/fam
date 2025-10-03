@@ -6,9 +6,27 @@ import 'services/auth_service.dart';
 import 'services/gemini_service.dart';
 import 'services/firestore_service.dart';
 import 'routes/app_router.dart';
+import 'config/env_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment configuration
+  await EnvConfig.load();
+
+  // Validate required environment variables
+  final missingVars = EnvConfig.validate();
+  if (missingVars.isNotEmpty) {
+    throw Exception(
+      'Missing required environment variables: ${missingVars.join(', ')}\n'
+      'Please create a .env file based on .env.template and add your API keys.'
+    );
+  }
+
+  // Print configuration summary in debug mode
+  if (EnvConfig.enableDebugLogging) {
+    EnvConfig.printSummary();
+  }
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -29,13 +47,14 @@ class MontaNAgentApp extends StatelessWidget {
       ],
       child: Consumer<GeminiService>(
         builder: (context, geminiService, child) {
-          // Initialize Gemini with API key (you'll need to set this)
-          // In production, store this securely or get from environment
+          // Initialize Gemini with API key from environment
           if (!geminiService.isInitialized) {
-            // TODO: Replace with your actual Gemini API key
-            const geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
-            if (geminiApiKey != 'YOUR_GEMINI_API_KEY_HERE') {
-              geminiService.initialize(geminiApiKey);
+            try {
+              final apiKey = EnvConfig.geminiApiKey;
+              geminiService.initialize(apiKey);
+            } catch (e) {
+              // Log error but continue - will show error in UI
+              debugPrint('Failed to initialize Gemini: $e');
             }
           }
 

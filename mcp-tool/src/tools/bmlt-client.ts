@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { BaseTool, ToolArgs, McpResponse } from "./base-tool.js";
-
-const BMLT_API_BASE = "https://bmlt.mtrna.org/prod";
-const USER_AGENT = "fam/0.0.1";
+import { ServerConfig } from "../config.js";
+import { logger } from "../logger.js";
 
 interface BmltMeeting {
   id_bigint: string;
@@ -37,8 +36,17 @@ export class BmltClient extends BaseTool {
     limit: z.number().min(1).max(200).optional().describe("Maximum number of results to return (default: 50)")
   };
 
+  private config: ServerConfig;
+
+  constructor(config: ServerConfig) {
+    super();
+    this.config = config;
+  }
+
   async callback(params: Record<string, any>): Promise<McpResponse> {
     try {
+      logger.debug('BMLT search called with params', params);
+      
       const searchParams = new URLSearchParams();
       
       // Add search parameters
@@ -60,16 +68,19 @@ export class BmltClient extends BaseTool {
       searchParams.append("switcher", "GetSearchResults");
       searchParams.append("data_field_key", "location_text,meeting_name,start_time,duration_time,location_street,location_municipality,location_province,comments,format_shared_id_list");
 
-      const apiUrl = `${BMLT_API_BASE}/client_interface/jsonp/?${searchParams.toString()}`;
+      const apiUrl = `${this.config.bmltApiBase}/client_interface/jsonp/?${searchParams.toString()}`;
+      
+      logger.debug('Fetching from BMLT API', { apiUrl });
       
       const response = await fetch(apiUrl, {
         headers: {
-          'User-Agent': USER_AGENT,
+          'User-Agent': this.config.userAgent,
           'Accept': 'application/javascript'
         }
       });
 
       if (!response.ok) {
+        logger.error('BMLT API request failed', undefined, { status: response.status, statusText: response.statusText });
         return {
           content: [{
             type: "text",
@@ -81,8 +92,7 @@ export class BmltClient extends BaseTool {
       // Get the JSONP response as text
       const jsonpText = await response.text();
       
-      // Debug: log the raw response
-      console.error(`[BMLT Debug] Raw JSONP response: ${jsonpText.substring(0, 200)}...`);
+      logger.debug('Raw JSONP response received', { preview: jsonpText.substring(0, 200) });
       
       // Extract JSON from JSONP response - handle the /**/callback(data) format
       let jsonData: string;
@@ -107,15 +117,14 @@ export class BmltClient extends BaseTool {
         }
       }
 
-      console.error(`[BMLT Debug] Extracted JSON data: ${jsonData.substring(0, 200)}...`);
+      logger.debug('Extracted JSON data', { preview: jsonData.substring(0, 200) });
       
       const responseData: BmltResponse | BmltMeeting[] = JSON.parse(jsonData);
       
-      // Debug: Output the full response structure
-      console.error(`[BMLT Debug] Full response structure:`, JSON.stringify(responseData, null, 2));
-      console.error(`[BMLT Debug] Response keys:`, Array.isArray(responseData) ? "Array" : Object.keys(responseData));
-      console.error(`[BMLT Debug] Response type:`, typeof responseData);
-      console.error(`[BMLT Debug] Is array?:`, Array.isArray(responseData));
+      logger.debug('Parsed BMLT response', { 
+        isArray: Array.isArray(responseData),
+        keys: Array.isArray(responseData) ? 'Array' : Object.keys(responseData),
+      });
 
       if (!Array.isArray(responseData) && responseData.error) {
         return {
@@ -131,18 +140,19 @@ export class BmltClient extends BaseTool {
       
       if (Array.isArray(responseData)) {
         meetings = responseData;
-        console.error(`[BMLT Debug] Response is direct array with ${meetings.length} items`);
+        logger.debug(`Response is direct array with ${meetings.length} items`);
       } else if (responseData.meetings) {
         meetings = responseData.meetings;
-        console.error(`[BMLT Debug] Found meetings array with ${meetings.length} items`);
+        logger.debug(`Found meetings array with ${meetings.length} items`);
       } else if (responseData.data) {
         meetings = responseData.data;
-        console.error(`[BMLT Debug] Found data array with ${meetings.length} items`);
+        logger.debug(`Found data array with ${meetings.length} items`);
       } else {
-        console.error(`[BMLT Debug] No meetings found in expected locations`);
+        logger.warn('No meetings found in expected locations');
       }
       
       if (meetings.length === 0) {
+        logger.info('No meetings found for search criteria', params);
         return {
           content: [{
             type: "text",
@@ -150,6 +160,8 @@ export class BmltClient extends BaseTool {
           }]
         };
       }
+
+      logger.info(`Found ${meetings.length} meetings`, { searchParams: params });
 
       // Format the meeting results
       const formattedMeetings = meetings.map(meeting => {
@@ -175,6 +187,7 @@ export class BmltClient extends BaseTool {
       };
 
     } catch (error) {
+      logger.error('Error searching BMLT', error, { params });
       return {
         content: [{
           type: "text",

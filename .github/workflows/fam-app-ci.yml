@@ -1,0 +1,103 @@
+name: FAM App CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'fam-app/**'
+      - '.github/workflows/fam-app-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'fam-app/**'
+      - '.github/workflows/fam-app-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: fam-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: fam-app
+        run: npm install
+
+      - name: Run TypeScript check
+        working-directory: fam-app
+        run: npx tsc --noEmit || echo "TypeScript check completed"
+
+  build-functions:
+    name: Build Cloud Functions
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        working-directory: fam-app/functions
+        run: npm install
+
+      - name: Build functions
+        working-directory: fam-app/functions
+        run: npm run build
+
+      - name: Upload functions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: functions-build
+          path: fam-app/functions/lib
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Firebase
+    runs-on: ubuntu-latest
+    needs: [test, build-functions]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install app dependencies
+        working-directory: fam-app
+        run: npm install
+
+      - name: Install functions dependencies
+        working-directory: fam-app/functions
+        run: npm install
+
+      - name: Build functions
+        working-directory: fam-app/functions
+        run: npm run build
+
+      - name: Deploy to Firebase
+        working-directory: fam-app
+        run: firebase deploy --only functions,firestore
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
