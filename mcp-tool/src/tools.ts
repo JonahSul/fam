@@ -2,6 +2,8 @@ import { readdir } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { Tool } from "./tools/base-tool.js";
+import { ServerConfig } from "./config.js";
+import { logger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,7 +12,7 @@ const __dirname = dirname(__filename);
  * Dynamically loads all tool classes from the tools directory
  * Excludes base-tool.ts which contains interfaces/base classes
  */
-export async function loadTools(): Promise<Tool[]> {
+export async function loadTools(config: ServerConfig): Promise<Tool[]> {
   const tools: Tool[] = [];
   const toolsDir = join(__dirname, "tools");
   
@@ -30,25 +32,25 @@ export async function loadTools(): Promise<Tool[]> {
         for (const exportedItem of Object.values(module)) {
           if (typeof exportedItem === "function" && exportedItem.prototype) {
             try {
-              const instance = new (exportedItem as any)();
+              const instance = new (exportedItem as any)(config);
               if (isValidTool(instance)) {
                 tools.push(instance);
-                console.error(`Loaded tool: ${instance.name}`);
+                logger.info(`Loaded tool: ${instance.name}`);
               }
             } catch (error) {
-              console.error(`Failed to instantiate tool from ${file}:`, error);
+              logger.error(`Failed to instantiate tool from ${file}`, error);
             }
           }
         }
       } catch (error) {
-        console.error(`Failed to load tool file ${file}:`, error);
+        logger.error(`Failed to load tool file ${file}`, error);
       }
     }
   } catch (error) {
-    console.error("Failed to read tools directory:", error);
+    logger.error("Failed to read tools directory", error);
   }
 
-  console.error(`Loaded ${tools.length} tools total`);
+  logger.info(`Loaded ${tools.length} tools total`);
   return tools;
 }
 

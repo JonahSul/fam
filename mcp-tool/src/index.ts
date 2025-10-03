@@ -2,20 +2,29 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { loadTools } from "./tools.js";
+import { loadConfig, validateConfig } from "./config.js";
+import { logger } from "./logger.js";
 
-const SERVER_VERSION = "0.0.1"
-const BMLT_API_BASE = "https://bmlt.mtrna.org/prod";
-const USER_AGENT = "fam/" + SERVER_VERSION;
+// Load and validate configuration
+const config = loadConfig();
+try {
+  validateConfig(config);
+  logger.setLevel(config.logLevel);
+  logger.info('Configuration loaded successfully', { config });
+} catch (error) {
+  logger.error('Configuration validation failed', error);
+  process.exit(1);
+}
 
 // Create server instance
 const server = new McpServer({
   name: "fam",
-  version: SERVER_VERSION,
+  version: config.serverVersion,
 });
 
 // Load and register tools
 async function setupTools() {
-  const tools = await loadTools();
+  const tools = await loadTools(config);
 
   // Register each tool with the MCP server
   for (const tool of tools) {
@@ -45,19 +54,36 @@ async function setupTools() {
     );
   }
 
-  console.error(`Registered ${tools.length} tools with MCP server`);
+  logger.info(`Registered ${tools.length} tools with MCP server`);
 }
 
 // Rip it
 async function main() {
-  await setupTools();
-  
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("MontaNAgent running on stdio");
+  try {
+    await setupTools();
+    
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    logger.info("MCP Server running on stdio");
+    
+    // Graceful shutdown handling
+    process.on('SIGINT', () => {
+      logger.info('Received SIGINT, shutting down gracefully');
+      process.exit(0);
+    });
+    
+    process.on('SIGTERM', () => {
+      logger.info('Received SIGTERM, shutting down gracefully');
+      process.exit(0);
+    });
+    
+  } catch (error) {
+    logger.error("Failed to start MCP server", error);
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {
-  console.error("Fatal error in main():", error);
+  logger.error("Fatal error in main()", error);
   process.exit(1);
 });
