@@ -19,7 +19,7 @@ void main() async {
   if (missingVars.isNotEmpty) {
     throw Exception(
       'Missing required environment variables: ${missingVars.join(', ')}\n'
-      'Please create a .env file based on .env.template and add your API keys.'
+      'Please create a .env file based on .env.template and add your API keys.',
     );
   }
 
