@@ -1,0 +1,82 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'firebase_options.dart';
+import 'services/auth_service.dart';
+import 'services/chat_service.dart';
+import 'services/firestore_service.dart';
+import 'routes/app_router.dart';
+import 'config/env_config.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment configuration
+  await EnvConfig.load();
+
+  // Validate required environment variables
+  final missingVars = EnvConfig.validate();
+  if (missingVars.isNotEmpty) {
+    throw Exception(
+      'Missing required environment variables: ${missingVars.join(', ')}\n'
+      'Please create a .env file based on .env.template and add your API keys.',
+    );
+  }
+
+  // Print configuration summary in debug mode
+  if (EnvConfig.enableDebugLogging) {
+    EnvConfig.printSummary();
+  }
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(const MontaNAgentApp());
+}
+
+class MontaNAgentApp extends StatelessWidget {
+  const MontaNAgentApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => ChatService()),
+        ChangeNotifierProvider(create: (_) => FirestoreService()),
+      ],
+      child: MaterialApp(
+        title: 'MontaNAgent',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6C63FF),
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+          cardTheme: CardThemeData(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+        ),
+        home: const AuthWrapper(),
+        onGenerateRoute: AppRouter.generateRoute,
+        debugShowCheckedModeBanner: false,
+      ),
+    );
+  }
+}
