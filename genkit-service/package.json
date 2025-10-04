@@ -1,0 +1,31 @@
+{
+  "name": "fam-genkit-service",
+  "version": "1.0.0",
+  "description": "GenKit service for Fellowship Access Montana AI chat",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "genkit start --dev",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "genkit:dev": "genkit start --dev"
+  },
+  "dependencies": {
+    "@genkit-ai/ai": "^1.20.0",
+    "@genkit-ai/core": "^1.20.0",
+    "@genkit-ai/flow": "^0.5.17",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "genkit": "^1.20.0",
+    "genkitx-anthropic": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.6.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,19 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:montanagent/services/gemini_service.dart';
+import 'package:montanagent/services/chat_service.dart';
 
 void main() {
-  group('GeminiService Tests', () {
-    test('should initialize properly', () {
-      final geminiService = GeminiService();
-      expect(geminiService.isInitialized, false);
-      expect(geminiService.isLoading, false);
+  group('ChatService (legacy test wrapper)', () {
+    test('initial state is idle', () {
+      final service = ChatService();
+      expect(service.isLoading, isFalse);
     });
 
-    test('should handle chat history correctly', () {
-      final geminiService = GeminiService();
-      final history = geminiService.getChatHistory();
-      expect(history, isA<List>());
-      expect(history.isEmpty, true);
+    test('health check handles unreachable server gracefully', () async {
+      final service = ChatService()..setBaseUrl('http://127.0.0.1:65535');
+      final isHealthy = await service.checkHealth();
+      expect(isHealthy, isFalse);
     });
   });
 }

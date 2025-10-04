@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../services/gemini_service.dart';
+import '../services/chat_service.dart';
 import '../services/firestore_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -38,7 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
 
-    final geminiService = Provider.of<GeminiService>(context, listen: false);
+    final chatService = Provider.of<ChatService>(context, listen: false);
     final firestoreService = Provider.of<FirestoreService>(
       context,
       listen: false,
@@ -68,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Get AI response
     try {
-      final response = await geminiService.sendMessage(messageText);
+      final response = await chatService.sendMessage(messageText);
 
       final aiMessage = ChatMessage(
         id: const Uuid().v4(),
@@ -177,13 +177,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   context,
                   listen: false,
                 );
-                final geminiService = Provider.of<GeminiService>(
-                  context,
-                  listen: false,
-                );
 
                 await firestoreService.clearChatHistory();
-                geminiService.resetChat();
+                // Note: ChatService doesn't maintain session state like Gemini did
               } catch (e) {
                 debugPrint('Error clearing chat: $e');
               }
@@ -253,9 +249,9 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // Loading Indicator
-          Consumer<GeminiService>(
-            builder: (context, geminiService, child) {
-              if (geminiService.isLoading) {
+          Consumer<ChatService>(
+            builder: (context, chatService, child) {
+              if (chatService.isLoading) {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -341,10 +337,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Consumer<GeminiService>(
-                  builder: (context, geminiService, child) {
+                Consumer<ChatService>(
+                  builder: (context, chatService, child) {
                     return FloatingActionButton(
-                      onPressed: geminiService.isLoading ? null : _sendMessage,
+                      onPressed: chatService.isLoading ? null : _sendMessage,
                       mini: true,
                       child: const Icon(Icons.send),
                     );

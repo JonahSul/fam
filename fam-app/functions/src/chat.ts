@@ -1,6 +1,5 @@
 import { genkit, z } from "genkit";
-import { googleAI } from "@genkit-ai/googleai";
-import { gemini20Flash } from "@genkit-ai/googleai";
+import { anthropic, claude35Sonnet } from 'genkitx-anthropic';
 import { onCallGenkit } from "firebase-functions/https";
 import * as admin from 'firebase-admin';
 

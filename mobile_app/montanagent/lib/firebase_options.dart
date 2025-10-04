@@ -41,13 +41,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'your-web-api-key',
-    appId: '1:your-project-number:web:your-web-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    storageBucket: 'your-project-id.appspot.com',
-    measurementId: 'G-your-measurement-id',
+    apiKey: 'AIzaSyB3qLd8AMPqkIbGDvl_EG1omwVTkkePTi8',
+    appId: '1:457048128323:web:5b057a549c2399a8ca8df6',
+    messagingSenderId: '457048128323',
+    projectId: 'namontana-fam',
+    authDomain: 'namontana-fam.firebaseapp.com',
+    storageBucket: 'namontana-fam.firebasestorage.app',
+    measurementId: 'G-2SE53YRWWL',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

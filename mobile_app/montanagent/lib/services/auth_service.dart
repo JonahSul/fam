@@ -50,10 +50,24 @@ class AuthService extends ChangeNotifier {
   // Sign in anonymously
   Future<UserCredential?> signInAnonymously() async {
     try {
+      if (kDebugMode) {
+        print('🔍 Attempting anonymous sign-in...');
+      }
       UserCredential result = await _auth.signInAnonymously();
+      if (kDebugMode) {
+        print('✅ Anonymous sign-in successful: ${result.user?.uid}');
+      }
       return result;
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        print('❌ Firebase Auth Exception: ${e.code} - ${e.message}');
+      }
       throw _handleAuthException(e);
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ General Exception during anonymous sign-in: $e');
+      }
+      rethrow;
     }
   }
 

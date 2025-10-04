@@ -1,229 +1,110 @@
-# montanagent
+# MontaNAgent – AI Recovery Companion
 
-# MontaNAgent - AI Recovery Companion
+## Overview
 
-MontaNAgent is a Flutter application that provides an AI-powered chat interface for Fellowship Access Montana, helping users with recovery support and meeting information through Google's Gemini AI.
+MontaNAgent delivers an agentic AI experience for Fellowship Access Montana members. The Flutter client surfaces a compassionate chat interface while an external GenKit service brokers requests to Anthropic Claude 4 Sonnet.
 
-## Features
+### Key capabilities
 
-- 🤖 **AI Chat Interface**: Powered by Google Gemini AI
-- 🔐 **Firebase Authentication**: Secure user login and registration
-- 💾 **Cloud Storage**: Chat history stored in Firestore
-- 📱 **Cross-Platform**: Runs on iOS, Android, and Web
-- 🎨 **Modern UI**: Clean, intuitive interface with Material Design 3
-- 👤 **Anonymous Access**: Guest users can chat without registration
+- 🤖 Conversational recovery support powered by Claude 4 Sonnet via GenKit
+- 🔐 Firebase Authentication (anonymous and email/password)
+- 💾 Firestore-backed persistent chat history
+- 📱 Flutter multi-platform (iOS, Android, Web, Desktop)
+- ☁️ Standalone Node.js GenKit bridge service with Anthropic integration
+
+## Architecture
+
+```text
+Flutter UI ──> ChatService (HTTP) ──> GenKit Service ──> Anthropic Claude 4 Sonnet
+                 │                         │
+                 └────── Firestore <───────┘
+```
+
+- `mobile_app/montanagent` – Flutter application
+- `genkit-service` – Node.js/TypeScript service exposing `/chat` and `/health`
 
 ## Prerequisites
 
-- Flutter SDK (3.22 or later)
-- Firebase project with the following services enabled:
-  - Authentication (Email/Password and Anonymous)
-  - Firestore Database
-  - Hosting (for web deployment)
-- Google AI API key for Gemini
+- Flutter SDK 3.22+
+- Node.js 20+
+- Firebase project with Authentication and Firestore enabled
+- Anthropic API key with access to Claude 4 Sonnet
 
-## Setup Instructions
+## Setup
 
-### 1. Clone and Setup Flutter
+### 1. GenKit service
 
 ```bash
-git clone <your-repo-url>
+cd genkit-service
+cp .env.example .env # add ANTHROPIC_API_KEY
+npm install
+npm run build
+npm start
+```
+
+The service listens on `http://localhost:3000` by default. Adjust `.env` or `PORT` as needed.
+
+### 2. Flutter app
+
+```bash
 cd mobile_app/montanagent
 flutter pub get
+cp .env.template .env # update Firebase + chat settings
 ```
 
-### 2. Firebase Configuration
+When running the app, pass the environment file as Dart defines so the chat client knows where to reach the GenKit service:
 
-1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
-2. Enable Authentication with Email/Password and Anonymous sign-in
-3. Enable Firestore Database
-4. Enable Hosting (for web deployment)
-
-#### Using FlutterFire CLI (Recommended)
 ```bash
-# Install FlutterFire CLI
-dart pub global activate flutterfire_cli
-
-# Configure Firebase for your project
-flutterfire configure
+flutter run --dart-define-from-file=.env
 ```
 
-#### Manual Configuration
-If FlutterFire CLI doesn't work, manually update `lib/firebase_options.dart` with your Firebase project configuration.
+For web builds you can optionally proxy requests through Firebase Hosting or another gateway. By default the app targets the URLs supplied through `CHAT_SERVICE_URL*` defines.
 
-### 3. Gemini AI Setup
+## Environment variables
 
-1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Update `lib/main.dart` and replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key
+### GenKit service (`genkit-service/.env`)
 
-**⚠️ Security Note**: In production, store the API key securely using environment variables or Firebase Remote Config.
+| Variable | Description |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Required. Anthropic API key used by the Claude plugin. |
+| `PORT` | Optional. HTTP port (defaults to `3000`). |
+| `NODE_ENV` | Optional. When set to `development`, verbose error details are returned. |
 
-### 4. Firestore Security Rules
+### Flutter app (`mobile_app/montanagent/.env`)
 
-Deploy the included Firestore rules:
-```bash
-firebase deploy --only firestore:rules
-```
+These values are consumed by the Flutter tool via `--dart-define-from-file`.
 
-## Running the App
+| Variable | Description |
+| --- | --- |
+| `FIREBASE_*` | Firebase identifiers (project id, API key, etc.). |
+| `ANTHROPIC_API_KEY` | Used for local tooling; forwarded to GenKit if required. |
+| `CHAT_SERVICE_URL` | Default GenKit endpoint for web builds. |
+| `CHAT_SERVICE_URL_ANDROID` | Endpoint used when running on Android emulators (default `http://10.0.2.2:3000`). |
+| `CHAT_SERVICE_URL_IOS` | Endpoint for iOS simulators. |
+| `CHAT_SERVICE_URL_DESKTOP` | Endpoint for desktop platforms. |
 
-### Development
-```bash
-# Run on connected device/emulator
-flutter run
+## Running
 
-# Run on web (Chrome)
-flutter run -d chrome
+1. Start the GenKit service (`npm start` in `genkit-service`).
+2. Launch the Flutter app with `flutter run --dart-define-from-file=.env`.
+3. Use the chat screen to exchange messages with MontaNAgent.
 
-# Run on specific platform
-flutter run -d ios
-flutter run -d android
-```
+## Testing & quality
 
-### Building for Production
-
-#### Web
-```bash
-flutter build web --release
-```
-
-#### Android
-```bash
-flutter build apk --release
-# or
-flutter build appbundle --release
-```
-
-#### iOS
-```bash
-flutter build ios --release
-```
-
-## Deployment
-
-### Firebase Hosting (Web)
-
-1. Install Firebase CLI:
-```bash
-npm install -g firebase-tools
-```
-
-2. Login to Firebase:
-```bash
-firebase login
-```
-
-3. Deploy using the provided script:
-```bash
-./deploy.sh
-```
-
-Or manually:
-```bash
-flutter build web --release
-firebase deploy --only hosting
-```
-
-## Project Structure
-
-```
-lib/
-├── main.dart                 # App entry point
-├── firebase_options.dart     # Firebase configuration
-├── routes/
-│   └── app_router.dart      # Navigation routing
-├── screens/
-│   ├── auth/
-│   │   ├── login_screen.dart
-│   │   └── register_screen.dart
-│   └── chat_screen.dart     # Main chat interface
-└── services/
-    ├── auth_service.dart    # Firebase Authentication
-    ├── gemini_service.dart  # Google AI Gemini integration
-    └── firestore_service.dart # Firestore database operations
-```
-
-## Key Features Implementation
-
-### Authentication
-- Email/password registration and login
-- Anonymous guest access
-- Secure user session management
-- Password reset functionality
-
-### AI Chat
-- Real-time chat with Gemini AI
-- Context-aware responses
-- Recovery-focused system prompts
-- Message history persistence
-
-### Data Storage
-- User-specific chat history in Firestore
-- Secure data access rules
-- Offline capability (when available)
-
-## Environment Variables
-
-For production deployment, consider using these environment variables:
-
-- `GEMINI_API_KEY`: Your Google AI Gemini API key
-- `FIREBASE_PROJECT_ID`: Your Firebase project ID
+- GenKit service: `npm run build`
+- Flutter unit tests: `flutter test test/unit`
+- Static analysis: `flutter analyze`
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **Build errors**: Run `flutter clean && flutter pub get`
-2. **Firebase connection issues**: Verify `firebase_options.dart` configuration
-3. **Gemini API errors**: Check API key validity and billing setup
-4. **Platform-specific issues**: Ensure platform-specific setup is complete
-
-### Platform Setup
-
-#### iOS
-- Minimum iOS version: 12.0
-- Ensure iOS deployment target is set correctly in `ios/Runner.xcodeproj`
-
-#### Android
-- Minimum SDK version: 21
-- Ensure `android/app/build.gradle` has correct configurations
-
-#### Web
-- Ensure web support is enabled: `flutter config --enable-web`
+| Issue | Resolution |
+| --- | --- |
+| Chat requests fail with 500 | Ensure `ANTHROPIC_API_KEY` is set and the GenKit service is running. |
+| Mobile emulator cannot reach service | Update `CHAT_SERVICE_URL_ANDROID`/`IOS` to point at your host machine (e.g., via `10.0.2.2`). |
+| Flutter build errors | Run `flutter clean && flutter pub get`, then retry with proper Dart defines. |
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is part of Fellowship Access Montana and follows the project's licensing terms.
-
-## Support
-
-For issues related to:
-- **App functionality**: Open an issue in this repository
-- **Firebase setup**: Check [Firebase documentation](https://firebase.google.com/docs)
-- **Flutter development**: See [Flutter documentation](https://flutter.dev/docs)
-- **Gemini AI**: Reference [Google AI documentation](https://ai.google.dev/)
-
----
-
-**MontaNAgent** - Empowering recovery through technology 🌟
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Fork the repo and create a feature branch.
+2. Run formatting, analysis, and unit tests before submitting.
+3. Document new environment variables or runtime requirements in this README.
