@@ -61,9 +61,7 @@ class ChatService extends ChangeNotifier {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/chat'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'message': message,
           'userId': userId ?? 'anonymous',
@@ -75,7 +73,9 @@ class ChatService extends ChangeNotifier {
         return data['response'] ?? 'No response received';
       } else {
         final errorData = json.decode(response.body);
-        throw Exception('Chat service error: ${errorData['error'] ?? 'Unknown error'}');
+        throw Exception(
+          'Chat service error: ${errorData['error'] ?? 'Unknown error'}',
+        );
       }
     } catch (e) {
       debugPrint('Error sending message to chat service: $e');
