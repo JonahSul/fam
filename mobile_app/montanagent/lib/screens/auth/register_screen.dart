@@ -92,13 +92,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         size: 60,
                         color: Theme.of(context).primaryColor,
                       ),
-                      SizedBox.shrink(),
+                      const SizedBox(height: 16),
                       Text(
                         'Join MontaNAgent',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox.shrink(),
+                      const SizedBox(height: 8),
                       Text(
                         'Create your account to get started',
                         style: TextStyle(color: Colors.grey[600]),
@@ -133,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                SizedBox.shrink(),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _passwordController,
@@ -165,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                SizedBox.shrink(),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -197,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                         ),
-                        SizedBox.shrink(),
+                        const SizedBox(height: 16),
 
                         SizedBox(
                           width: double.infinity,
@@ -214,7 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
 
-                SizedBox.shrink(),
+                const SizedBox(height: 16),
 
                 // Sign In Link Card
                 GlassCard(

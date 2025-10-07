@@ -27,7 +27,7 @@ class ToolExecutionWidget extends StatelessWidget {
             Row(
               children: [
                 _buildStatusIcon(),
-                SizedBox.shrink(),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _getToolDisplayName(execution.toolName),
@@ -51,7 +51,7 @@ class ToolExecutionWidget extends StatelessWidget {
               ],
             ),
             
-            SizedBox.shrink(),
+            const SizedBox(height: 8),
             
             // Status and timestamp
             Row(
@@ -75,7 +75,7 @@ class ToolExecutionWidget extends StatelessWidget {
             
             // Error message if failed
             if (execution.isFailed && execution.error != null) ...[
-              SizedBox.shrink(),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -86,7 +86,7 @@ class ToolExecutionWidget extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.error_outline, color: Colors.red[600], size: 16),
-                    SizedBox.shrink(),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         execution.error!,
@@ -103,13 +103,13 @@ class ToolExecutionWidget extends StatelessWidget {
             
             // Result preview if completed
             if (execution.isCompleted && execution.result != null) ...[
-              SizedBox.shrink(),
+              const SizedBox(height: 8),
               _buildResultPreview(context),
             ],
             
             // Progress indicator if executing
             if (execution.isExecuting) ...[
-              SizedBox.shrink(),
+              const SizedBox(height: 8),
               const LinearProgressIndicator(),
             ],
           ],

@@ -50,7 +50,7 @@ class TodoItemWidget extends StatelessWidget {
                 ],
               ),
               
-              SizedBox.shrink(),
+              const SizedBox(height: 8),
               
               // Description
               if (todo.description.isNotEmpty) ...[
@@ -62,7 +62,7 @@ class TodoItemWidget extends StatelessWidget {
                         : null,
                   ),
                 ),
-                SizedBox.shrink(),
+                const SizedBox(height: 8),
               ],
               
               // Tags
@@ -79,7 +79,7 @@ class TodoItemWidget extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                   )).toList(),
                 ),
-                SizedBox.shrink(),
+                const SizedBox(height: 8),
               ],
               
               // AI Context
@@ -101,7 +101,7 @@ class TodoItemWidget extends StatelessWidget {
                         size: 16,
                         color: Colors.blue[700],
                       ),
-                      SizedBox.shrink(),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           todo.aiContext!,
@@ -115,7 +115,7 @@ class TodoItemWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox.shrink(),
+                const SizedBox(height: 8),
               ],
               
               // Footer with status and actions
@@ -147,7 +147,7 @@ class TodoItemWidget extends StatelessWidget {
                     ),
                   ),
                   
-                  SizedBox.shrink(),
+                  const SizedBox(width: 8),
                   
                   // Action buttons
                   Row(
@@ -173,7 +173,7 @@ class TodoItemWidget extends StatelessWidget {
               
               // Due date
               if (todo.dueDate != null) ...[
-                SizedBox.shrink(),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
@@ -181,7 +181,7 @@ class TodoItemWidget extends StatelessWidget {
                       size: 16,
                       color: Colors.grey[600],
                     ),
-                    SizedBox.shrink(),
+                    const SizedBox(width: 8),
                     Text(
                       'Due: ${_formatDate(todo.dueDate!)}',
                       style: TextStyle(
