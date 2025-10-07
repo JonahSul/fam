@@ -18,7 +18,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "genkit": "^1.20.0",
-    "genkitx-anthropic": "^0.25.0"
+    "genkitx-anthropic": "^0.25.0",
+    "genkitx-openai": "^0.25.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

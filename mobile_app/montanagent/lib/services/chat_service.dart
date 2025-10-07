@@ -59,26 +59,45 @@ class ChatService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('🌐 Sending message to: $_baseUrl/chat');
+      debugPrint('📝 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}');
+      
+      // Add timeout and better error handling for web
       final response = await http.post(
         Uri.parse('$_baseUrl/chat'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: json.encode({
           'message': message,
           'userId': userId ?? 'anonymous',
         }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - GenKit service may be unavailable');
+        },
       );
 
+      debugPrint('📊 Response status: ${response.statusCode}');
+      debugPrint('📄 Response body: ${response.body.length > 100 ? '${response.body.substring(0, 100)}...' : response.body}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['response'] ?? 'No response received';
+        final responseText = data['response'] ?? 'No response received';
+        debugPrint('✅ Chat response received: ${responseText.length > 50 ? responseText.substring(0, 50) + '...' : responseText}');
+        return responseText;
       } else {
         final errorData = json.decode(response.body);
+        debugPrint('❌ Chat service error: ${errorData['error'] ?? 'Unknown error'}');
         throw Exception(
           'Chat service error: ${errorData['error'] ?? 'Unknown error'}',
         );
       }
     } catch (e) {
-      debugPrint('Error sending message to chat service: $e');
+      debugPrint('❌ Error sending message to chat service: $e');
+      debugPrint('🔍 Error type: ${e.runtimeType}');
       rethrow;
     } finally {
       _isLoading = false;

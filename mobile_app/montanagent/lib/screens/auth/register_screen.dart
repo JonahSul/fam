@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../components/glass/glass.dart';
+import '../../components/backgrounds/space_background.dart';
+import '../../theme/index.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final GlobalKey _backgroundKey = GlobalKey();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -46,7 +50,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: MyText.bodyMedium(e.toString(), color: Colors.white),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -66,17 +73,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
+      body: SimpleSpaceBackground(
+        backgroundKey: _backgroundKey,
+        state: SpaceBackgroundState(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.zero,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Header
                 Container(
-                  margin: const EdgeInsets.only(bottom: 32),
+                  margin: EdgeInsets.zero,
                   child: Column(
                     children: [
                       Icon(
@@ -84,13 +92,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         size: 60,
                         color: Theme.of(context).primaryColor,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox.shrink(),
                       Text(
                         'Join MontaNAgent',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox.shrink(),
                       Text(
                         'Create your account to get started',
                         style: TextStyle(color: Colors.grey[600]),
@@ -100,7 +108,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
                 // Registration Form
-                TextFormField(
+                GlassCard(
+                  backgroundKey: _backgroundKey,
+                  padding: EdgeInsets.zero,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
@@ -118,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox.shrink(),
 
                 TextFormField(
                   controller: _passwordController,
@@ -150,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox.shrink(),
 
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -181,28 +196,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 24),
+                        ),
+                        SizedBox.shrink(),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _register,
-                    child: _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text('Create Account'),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _register,
+                            child: _isLoading
+                                ? const CircularProgressIndicator()
+                                : const Text('Create Account'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox.shrink(),
 
-                // Sign In Link
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Already have an account? Sign In'),
+                // Sign In Link Card
+                GlassCard(
+                  backgroundKey: _backgroundKey,
+                  padding: EdgeInsets.zero,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Already have an account? Sign In'),
+                  ),
                 ),
               ],
             ),

@@ -3,6 +3,7 @@
 /// 
 /// This class wraps flutter_dotenv to provide type-safe access to configuration
 /// values with proper validation and error handling.
+library;
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 

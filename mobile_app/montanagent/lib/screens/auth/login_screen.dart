@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../components/glass/glass.dart';
+import '../../components/backgrounds/space_background.dart';
+import '../../theme/index.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final GlobalKey _backgroundKey = GlobalKey();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -39,7 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: MyText.bodyMedium(e.toString(), color: Colors.white),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -62,7 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: MyText.bodyMedium(e.toString(), color: Colors.white),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -74,12 +84,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  SpaceBackgroundState backgroundState() => SpaceBackgroundState();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+      body: SimpleSpaceBackground(
+        backgroundKey: _backgroundKey,
+        state: backgroundState(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.zero,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -93,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // App Logo/Title
                 Container(
-                  margin: const EdgeInsets.only(bottom: 48),
+                  margin: EdgeInsets.zero,
                   child: Column(
                     children: [
                       Icon(
@@ -101,139 +116,148 @@ class _LoginScreenState extends State<LoginScreen> {
                         size: 80,
                         color: Theme.of(context).primaryColor,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
+                      SizedBox.shrink(),
+                      MyText.titleLarge(
                         'MontaNAgent',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
-                            ),
+                        fontWeight: 700,
+                        color: Theme.of(context).primaryColor,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
+                      MySpacing.height(8),
+                      MyText.bodyLarge(
                         'Your AI Recovery Companion',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                        color: Colors.grey[600],
                       ),
                     ],
                   ),
                 ),
 
                 // Login Form
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.email),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                GlassCard(
+                  backgroundKey: _backgroundKey,
+                  padding: EdgeInsets.zero,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        MyCard(
+                          child: TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Please enter a valid email';
+                              }
+                              return null;
                             },
                           ),
                         ),
-                        obscureText: _obscurePassword,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
+                      SizedBox.shrink(),
+                        MyCard(
+                          child: TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            obscureText: _obscurePassword,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      SizedBox.shrink(),
+                        MyButton.large(
+                          onPressed: _isLoading ? null : _signIn,
+                          block: true,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : MyText.bodyLarge('Sign In', color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SizedBox.shrink(),
+
+                // Alternative Options Card
+                GlassCard(
+                  backgroundKey: _backgroundKey,
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      // Divider
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.zero,
+                            child: Text(
+                              'OR',
+                              style: TextStyle(color: Colors.grey[400]),
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
                       ),
-                      const SizedBox(height: 24),
+
+                      SizedBox.shrink(),
+
+                      // Anonymous Sign In
                       SizedBox(
                         width: double.infinity,
                         height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _signIn,
-                          child: _isLoading
-                              ? const CircularProgressIndicator()
-                              : const Text('Sign In'),
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _signInAnonymously,
+                          child: const Text('Continue as Guest'),
                         ),
+                      ),
+
+                      SizedBox.shrink(),
+
+                      // Sign Up Link
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        child: const Text('Don\'t have an account? Sign Up'),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Divider
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Anonymous Sign In
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton(
-                    onPressed: _isLoading ? null : _signInAnonymously,
-                    child: const Text('Continue as Guest'),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Sign Up Link
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/register');
-                  },
-                  child: const Text('Don\'t have an account? Sign Up'),
-                ),
-
-                // Forgot Password Link
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/forgot-password');
-                  },
-                  child: const Text('Forgot Password?'),
-                ),
               ],
+              ),
             ),
           ),
         ),
