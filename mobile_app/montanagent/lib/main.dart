@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,15 +15,9 @@ import 'config/env_config.dart';
 import 'theme/index.dart';
 import 'route/routes.dart';
 import 'route/routes_name.dart';
-import 'view/layouts/layout.dart';
-import 'view/dashboard/dashboard_screen.dart';
-import 'view/apps/chat_screen.dart';
-import 'view/auth/login_screen.dart';
-import 'view/auth/register_screen.dart';
 import 'helpers/services/navigation_service.dart';
 import 'helpers/services/storage/local_storage.dart';
 import 'helpers/theme/app_notifier.dart';
-import 'helpers/theme/theme_customizer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,8 +77,6 @@ class MontaNAgentApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    RoutesName route = RoutesName();
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
@@ -109,7 +100,7 @@ class MontaNAgentApp extends StatelessWidget {
         darkTheme: theme, // For now, use same theme for both
         themeMode: ThemeMode.light, // Default to light theme
         navigatorKey: NavigationService.navigatorKey,
-        initialRoute: route.dashboard,
+        initialRoute: RoutesName.dashboard,
         getPages: getPageRoute(),
         builder: (context, child) {
           NavigationService.registerContext(context);
