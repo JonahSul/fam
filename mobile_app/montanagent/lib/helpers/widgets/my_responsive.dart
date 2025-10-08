@@ -1,53 +1,37 @@
 import 'package:flutter/material.dart';
-
-class ScreenMediaType {
-  final bool isMobile;
-  final bool isTablet;
-  final bool isDesktop;
-
-  const ScreenMediaType({
-    required this.isMobile,
-    required this.isTablet,
-    required this.isDesktop,
-  });
-}
+import 'my_screen_media_type.dart';
 
 class MyResponsive extends StatelessWidget {
-  final Widget Function(BuildContext context, BoxConstraints constraints, ScreenMediaType screenMediaType) builder;
+  final Widget Function(BuildContext, BoxConstraints, MyScreenMediaType) builder;
 
-  const MyResponsive({super.key, required this.builder});
+  const MyResponsive({
+    super.key,
+    required this.builder,
+  });
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = constraints.maxHeight;
-
-        ScreenMediaType screenMediaType;
-
-        if (width < 768) {
-          screenMediaType = const ScreenMediaType(
-            isMobile: true,
-            isTablet: false,
-            isDesktop: false,
-          );
-        } else if (width < 1200) {
-          screenMediaType = const ScreenMediaType(
-            isMobile: false,
-            isTablet: true,
-            isDesktop: false,
-          );
-        } else {
-          screenMediaType = const ScreenMediaType(
-            isMobile: false,
-            isTablet: false,
-            isDesktop: true,
-          );
-        }
-
-        return builder(context, constraints, screenMediaType);
+        final screenMT = _getScreenMediaType(constraints.maxWidth);
+        return builder(context, constraints, screenMT);
       },
     );
+  }
+
+  MyScreenMediaType _getScreenMediaType(double width) {
+    if (width < MyScreenMediaType.xs.width) {
+      return MyScreenMediaType.xs;
+    } else if (width < MyScreenMediaType.sm.width) {
+      return MyScreenMediaType.sm;
+    } else if (width < MyScreenMediaType.md.width) {
+      return MyScreenMediaType.md;
+    } else if (width < MyScreenMediaType.lg.width) {
+      return MyScreenMediaType.lg;
+    } else if (width < MyScreenMediaType.xl.width) {
+      return MyScreenMediaType.xl;
+    } else {
+      return MyScreenMediaType.xxl;
+    }
   }
 }

@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../components/glass/glass.dart';
 import '../../components/backgrounds/space_background.dart';
-import '../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
+import '../../helpers/widgets/my_button.dart';
+import '../../helpers/widgets/my_card.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -119,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox.shrink(),
                       MyText.titleLarge(
                         'MontaNAgent',
-                        fontWeight: 700,
+                        style: TextStyle(fontWeight: FontWeight.w700),
                         color: Theme.of(context).primaryColor,
                       ),
                       MySpacing.height(8),
@@ -191,10 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       SizedBox.shrink(),
                         MyButton.large(
-                          onPressed: _isLoading ? null : _signIn,
-                          block: true,
-                          child: _isLoading
-                              ? SizedBox(
+                          _isLoading
+                              ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -203,6 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               : MyText.bodyLarge('Sign In', color: Colors.white),
+                          onPressed: _isLoading ? null : _signIn,
                         ),
                       ],
                     ),

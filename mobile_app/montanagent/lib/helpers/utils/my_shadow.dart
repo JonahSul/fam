@@ -1,62 +1,137 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'package:flutter/material.dart';
 
-class MyShadow {
-  final Color? color;
-  final int alpha;
-  final double spreadRadius;
-  final double blurRadius;
-  final Offset? offset;
+enum MyShadowPosition {
+  topLeft("Top Left"),
+  top("Top"),
+  topRight("Top Right"),
+  centerLeft("Center Left"),
+  center("Center"),
+  centerRight("Center Right"),
+  bottomLeft("Bottom Left"),
+  bottom("Bottom"),
+  bottomRight("Bottom Right");
 
-  const MyShadow({
-    this.color,
-    this.alpha = 30,
-    this.spreadRadius = 0,
-    this.blurRadius = 3,
-    this.offset,
-  });
+  final String humanReadable;
 
-  static const MyShadow elevation0 = MyShadow(
-    alpha: 0,
-    blurRadius: 0,
-    spreadRadius: 0,
-  );
-
-  static const MyShadow elevation1 = MyShadow(
-    alpha: 20,
-    blurRadius: 2,
-    spreadRadius: 0,
-    offset: Offset(0, 1),
-  );
-
-  static const MyShadow elevation2 = MyShadow(
-    alpha: 25,
-    blurRadius: 3,
-    spreadRadius: 0,
-    offset: Offset(0, 1),
-  );
-
-  static const MyShadow elevation3 = MyShadow(
-    alpha: 30,
-    blurRadius: 4,
-    spreadRadius: 0,
-    offset: Offset(0, 2),
-  );
-
-  static const MyShadow elevation4 = MyShadow(
-    alpha: 35,
-    blurRadius: 5,
-    spreadRadius: 0,
-    offset: Offset(0, 2),
-  );
+  const MyShadowPosition(this.humanReadable);
 }
 
-class MyShadowPosition {
-  static const bottom = MyShadowPosition._(0, 1);
-  static const top = MyShadowPosition._(0, -1);
-  static const left = MyShadowPosition._(-1, 0);
-  static const right = MyShadowPosition._(1, 0);
+class MyShadow {
+  late int alpha;
+  late double elevation, spreadRadius, blurRadius;
+  Offset? offset;
+  MyShadowPosition? position;
+  Color? color;
+  bool? darkShadow;
 
-  final double x, y;
+  MyShadow(
+      {this.elevation = 3,
+      double? spreadRadius,
+      double? blurRadius,
+      Offset? offset,
+      MyShadowPosition position = MyShadowPosition.bottom,
+      int? alpha,
+      Color? color,
+      bool darkShadow = false}) {
+    this.spreadRadius = spreadRadius ?? elevation * 0.125;
+    this.blurRadius = blurRadius ?? elevation * 2;
+    this.alpha = alpha ?? (darkShadow ? 80 : 25);
+    this.offset = offset;
+    this.position = position;
+    this.color = color;
+    this.darkShadow = darkShadow;
 
-  const MyShadowPosition._(this.x, this.y);
+    if (offset == null) {
+      switch (position) {
+        case MyShadowPosition.topLeft:
+          this.offset = Offset(-elevation, -elevation);
+          break;
+        case MyShadowPosition.top:
+          this.offset = Offset(0, -elevation);
+          break;
+        case MyShadowPosition.topRight:
+          this.offset = Offset(elevation, -elevation);
+          break;
+        //TODO: Shadow problem
+        case MyShadowPosition.centerLeft:
+          this.offset = Offset(-elevation, elevation * 0.25);
+          break;
+        case MyShadowPosition.center:
+          this.offset = Offset(0, 0);
+          break;
+        //TODO: Shadow problem
+        case MyShadowPosition.centerRight:
+          this.offset = Offset(elevation, elevation * 0.25);
+          break;
+        case MyShadowPosition.bottomLeft:
+          this.offset = Offset(-elevation, elevation);
+          break;
+        case MyShadowPosition.bottom:
+          this.offset = Offset(0, elevation);
+          break;
+        case MyShadowPosition.bottomRight:
+          this.offset = Offset(elevation, elevation);
+          break;
+      }
+    }
+  }
+
+  MyShadow.none(
+      {this.elevation = 0,
+      double? spreadRadius,
+      double? blurRadius,
+      Offset? offset,
+      MyShadowPosition position = MyShadowPosition.bottom,
+      int? alpha,
+      Color? color,
+      bool darkShadow = false}) {
+    this.spreadRadius = spreadRadius ?? elevation * 0.125;
+    this.blurRadius = blurRadius ?? elevation * 2;
+    this.alpha = alpha ?? (darkShadow ? 100 : 36);
+    this.offset = offset;
+    this.position = position;
+    this.color = color;
+    this.darkShadow = darkShadow;
+
+    if (offset == null) {
+      switch (position) {
+        case MyShadowPosition.topLeft:
+          this.offset = Offset(-elevation, -elevation);
+          break;
+        case MyShadowPosition.top:
+          this.offset = Offset(0, -elevation);
+          break;
+        case MyShadowPosition.topRight:
+          this.offset = Offset(elevation, -elevation);
+          break;
+        //TODO: Shadow problem
+        case MyShadowPosition.centerLeft:
+          this.offset = Offset(-elevation, elevation * 0.25);
+          break;
+        case MyShadowPosition.center:
+          this.offset = Offset(0, 0);
+          break;
+        //TODO: Shadow problem
+        case MyShadowPosition.centerRight:
+          this.offset = Offset(elevation, elevation * 0.25);
+          break;
+        case MyShadowPosition.bottomLeft:
+          this.offset = Offset(-elevation, elevation);
+          break;
+        case MyShadowPosition.bottom:
+          this.offset = Offset(0, elevation);
+          break;
+        case MyShadowPosition.bottomRight:
+          this.offset = Offset(elevation, elevation);
+          break;
+      }
+    }
+  }
+
+  @override
+  String toString() {
+    return 'MyShadow{alpha: $alpha, elevation: $elevation, spreadRadius: $spreadRadius, blurRadius: $blurRadius, offset: $offset, position: $position, color: $color, darkShadow: $darkShadow}';
+  }
 }

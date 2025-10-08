@@ -12,7 +12,7 @@ import 'services/bmlt_service.dart';
 import 'services/render_quality_service.dart';
 import 'services/agent_mode_service.dart';
 import 'config/env_config.dart';
-import 'theme/index.dart';
+import 'helpers/theme/app_theme.dart';
 import 'route/routes.dart';
 import 'route/routes_name.dart';
 import 'helpers/services/navigation_service.dart';
@@ -97,11 +97,24 @@ class MontaNAgentApp extends StatelessWidget {
       child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         theme: theme,
+        initialBinding: BindingsBuilder(() {
+          // Register services with GetX
+          Get.put<AuthService>(AuthService());
+          Get.put<ChatService>(ChatService());
+          Get.put<FirestoreService>(FirestoreService());
+          Get.put<BmltService>(BmltService());
+          Get.put<TodoAIService>(TodoAIService(Get.find<FirestoreService>()));
+          Get.put<SessionService>(SessionService(
+            Get.find<FirestoreService>(),
+            Get.find<TodoAIService>(),
+          ));
+          Get.put<AgentModeService>(AgentModeService()..initialize());
+        }),
         darkTheme: theme, // For now, use same theme for both
         themeMode: ThemeMode.light, // Default to light theme
         navigatorKey: NavigationService.navigatorKey,
         initialRoute: RoutesName.dashboard,
-        getPages: getPageRoute(),
+        getPages: Routes.routes,
         builder: (context, child) {
           NavigationService.registerContext(context);
           return child ?? Container();

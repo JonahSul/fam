@@ -12,7 +12,7 @@ import 'package:henox/helpers/widgets/my_spacing.dart';
 import 'package:henox/helpers/widgets/my_text.dart';
 import 'package:henox/model/time_line_model.dart';
 import 'package:henox/view/layouts/layout.dart';
-import 'package:timelines/timelines.dart';
+import 'package:henox/helpers/widgets/simple_timeline.dart';
 
 class TimeLineScreen extends StatefulWidget {
   const TimeLineScreen({super.key});
@@ -52,30 +52,23 @@ class _TimeLineScreenState extends State<TimeLineScreen> with SingleTickerProvid
                 padding: MySpacing.x(flexSpacing),
                 child: Column(
                   children: [
-                    Timeline.tileBuilder(
-                      clipBehavior: Clip.antiAliasWithSaveLayer,
-                      shrinkWrap: true,
-                      builder: TimelineTileBuilder.fromStyle(
-                        indicatorStyle: IndicatorStyle.outlined,
-                        itemCount: controller.timeLine.length,
-                        contentsAlign: ContentsAlign.alternating,
-                        connectorStyle: ConnectorStyle.dashedLine,
-                        endConnectorStyle: ConnectorStyle.dashedLine,
-                        contentsBuilder: (context, index) {
-                          TimeLineModel timeLine = controller.timeLine[index];
-                          return MyCard(
+                    Timeline(
+                      children: controller.timeLine.map((timeLine) {
+                        return TimelineItem(
+                          icon: Icons.circle,
+                          child: MyCard(
                             marginAll: 20,
                             borderRadiusAll: 8,
                             shadow: MyShadow(position: MyShadowPosition.bottom, elevation: .5),
                             paddingAll: 24,
                             child: Column(
-                              crossAxisAlignment: index % 2 == 0 ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 MyText.bodyMedium(timeLine.title, fontWeight: 600, overflow: TextOverflow.ellipsis),
                                 MySpacing.height(12),
                                 MyText.bodySmall(timeLine.date, muted: true, overflow: TextOverflow.ellipsis),
                                 MySpacing.height(12),
-                                MyText.bodySmall(timeLine.description, fontWeight: 600,muted:true, textAlign: index % 2 == 0 ? TextAlign.start : TextAlign.end),
+                                MyText.bodySmall(timeLine.description, fontWeight: 600,muted:true, textAlign: TextAlign.start),
                                 MySpacing.height(12),
                                 Wrap(
                                   spacing: 16,
@@ -99,9 +92,9 @@ class _TimeLineScreenState extends State<TimeLineScreen> with SingleTickerProvid
                                 )
                               ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),

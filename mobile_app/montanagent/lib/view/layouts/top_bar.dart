@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
 
 class TopBar extends StatelessWidget {
   const TopBar({super.key});
@@ -27,8 +28,7 @@ class TopBar extends StatelessWidget {
               children: [
                 MyText.titleMedium(
                   _getCurrentPageTitle(),
-                  fontSize: 18,
-                  fontWeight: 600,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -54,10 +54,10 @@ class TopBar extends StatelessWidget {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: Theme.of(context).primaryColor,
-                child: MyText.bodySmall(
+                child:                 MyText.bodySmall(
                   'U',
                   color: Colors.white,
-                  fontWeight: 600,
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ],

@@ -1,6 +1,7 @@
 class MyBreadcrumbItem {
   final String name;
+  final String? route;
   final bool active;
 
-  const MyBreadcrumbItem({required this.name, this.active = false});
+  MyBreadcrumbItem({required this.name, this.route, this.active = false});
 }

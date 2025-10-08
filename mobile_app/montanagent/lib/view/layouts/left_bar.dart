@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
 import '../../../route/routes_name.dart';
 
 class LeftBar extends StatelessWidget {
@@ -26,7 +27,7 @@ class LeftBar extends StatelessWidget {
                 MySpacing.height(12),
                 MyText.titleMedium(
                   'MontaNAgent',
-                  fontWeight: 600,
+                  style: TextStyle(fontWeight: FontWeight.w600),
                   color: Theme.of(context).primaryColor,
                 ),
                 MyText.bodySmall(
@@ -111,7 +112,7 @@ class LeftBar extends StatelessWidget {
             MyText.bodyMedium(
               title,
               color: isActive ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color,
-              fontWeight: isActive ? 600 : 400,
+              style: TextStyle(fontWeight: isActive ? FontWeight.w600 : FontWeight.w400),
             ),
           ],
         ),

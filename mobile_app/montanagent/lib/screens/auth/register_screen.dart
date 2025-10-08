@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../components/glass/glass.dart';
 import '../../components/backgrounds/space_background.dart';
-import '../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
+import '../../helpers/widgets/my_button.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

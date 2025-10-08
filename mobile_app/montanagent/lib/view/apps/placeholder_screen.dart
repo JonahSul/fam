@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../theme/index.dart';
-import '../../layouts/layout.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
+import '../../helpers/widgets/my_card.dart';
+import '../../helpers/widgets/my_button.dart';
+import '../layouts/layout.dart';
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;
@@ -20,7 +23,7 @@ class PlaceholderScreen extends StatelessWidget {
         children: [
           Padding(
             padding: MySpacing.x(16),
-            child: MyText.titleMedium(title, fontSize: 18, fontWeight: 600),
+            child: MyText.titleMedium(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           ),
           MySpacing.height(16),
           Expanded(
@@ -38,7 +41,7 @@ class PlaceholderScreen extends StatelessWidget {
                     MySpacing.height(16),
                     MyText.titleMedium(
                       'Coming Soon',
-                      fontWeight: 600,
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     MySpacing.height(8),
                     MyText.bodyMedium(
@@ -48,8 +51,8 @@ class PlaceholderScreen extends StatelessWidget {
                     ),
                     MySpacing.height(24),
                     MyButton.medium(
+                      MyText.bodyMedium('Go to Chat', color: Colors.white),
                       onPressed: () => Get.toNamed('/apps/chat'),
-                      child: MyText.bodyMedium('Go to Chat', color: Colors.white),
                     ),
                   ],
                 ),

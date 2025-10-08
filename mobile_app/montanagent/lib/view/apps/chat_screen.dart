@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../controller/apps/chat_controller.dart';
-import '../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
+import '../../helpers/widgets/my_card.dart';
+import '../../helpers/widgets/my_button.dart';
 import '../layouts/layout.dart';
 import '../../services/firestore_service.dart';
 import '../../services/session_service.dart';
@@ -40,7 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium("Chat", fontSize: 18, fontWeight: 600),
+                    MyText.titleMedium("Chat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -85,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
           MySpacing.height(16),
           MyText.titleMedium(
             'Start a conversation',
-            fontWeight: 600,
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           MySpacing.height(8),
           MyText.bodyMedium(
@@ -183,8 +186,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           MySpacing.width(12),
           MyButton.medium(
+            const Icon(Icons.send, size: 20),
             onPressed: _sendMessage,
-            child: Icon(Icons.send, size: 20),
           ),
         ],
       ),

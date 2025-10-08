@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../helpers/theme/app_theme.dart';
 import '../../helpers/widgets/my_breadcrumb.dart';
-import '../../helpers/widgets/my_breadcrumb_item.dart';
 import '../../helpers/widgets/my_card.dart';
 import '../../helpers/widgets/my_flex.dart';
-import '../../helpers/widgets/my_flex_item.dart';
 import '../../helpers/widgets/my_spacing.dart';
 import '../../helpers/widgets/my_text.dart';
 import '../../helpers/widgets/my_button.dart';
@@ -29,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                MyText.titleMedium("Dashboard", fontSize: 18, fontWeight: 600),
+                MyText.titleMedium("Dashboard", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 MyBreadcrumb(
                   children: [
                     MyBreadcrumbItem(name: 'Home'),
@@ -75,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   MyText.bodyLarge(
                     'Welcome back!',
-                    fontWeight: 600,
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   MyText.bodySmall(
                     'Ready for your recovery journey?',
@@ -87,8 +85,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           MySpacing.height(16),
           MyButton.medium(
+            MyText.bodyMedium('Start Chat', color: Colors.white),
             onPressed: () => Get.toNamed('/apps/chat'),
-            child: MyText.bodyMedium('Start Chat', color: Colors.white),
           ),
         ],
       ),
@@ -101,14 +99,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MyText.bodyLarge('Your Progress', fontWeight: 600),
+          MyText.bodyLarge('Your Progress', style: TextStyle(fontWeight: FontWeight.w600)),
           MySpacing.height(16),
           Row(
             children: [
               Expanded(
                 child: Column(
                   children: [
-                    MyText.titleMedium('12', fontWeight: 700),
+                    MyText.titleMedium('12', style: TextStyle(fontWeight: FontWeight.w700)),
                     MyText.bodySmall('Sessions', color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7)),
                   ],
                 ),
@@ -116,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    MyText.titleMedium('8', fontWeight: 700),
+                    MyText.titleMedium('8', style: TextStyle(fontWeight: FontWeight.w700)),
                     MyText.bodySmall('Goals Met', color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7)),
                   ],
                 ),
@@ -134,7 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MyText.bodyLarge('Quick Actions', fontWeight: 600),
+          MyText.bodyLarge('Quick Actions', style: TextStyle(fontWeight: FontWeight.w600)),
           MySpacing.height(16),
           Column(
             children: [
@@ -156,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MyText.bodyLarge('Recent Activity', fontWeight: 600),
+          MyText.bodyLarge('Recent Activity', style: TextStyle(fontWeight: FontWeight.w600)),
           MySpacing.height(16),
           Column(
             children: [

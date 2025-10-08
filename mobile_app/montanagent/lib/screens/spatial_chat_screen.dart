@@ -9,7 +9,7 @@ import '../services/agent_mode_service.dart';
 import '../components/agent/agent_avatar.dart';
 import '../components/backgrounds/space_background.dart';
 import '../services/firestore_service.dart';
-import '../theme/index.dart';
+import '../helpers/theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
 
 class SpatialChatScreen extends StatefulWidget {

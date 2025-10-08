@@ -29,14 +29,14 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin, UIMixin {
-  late ChatController controller = Get.put(ChatController());
+  late ChatController controller = Get.put(ChatController(), tag: 'chat_controller');
   @override
   OutlineInputBorder outlineInputBorder = OutlineInputBorder(borderSide: BorderSide.none);
 
   @override
   Widget build(BuildContext context) {
     return Layout(
-      child: GetBuilder(
+      child: GetBuilder<ChatController>(
         init: controller,
         tag: 'chat_controller',
         builder: (controller) {
@@ -82,7 +82,35 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
         children: [
           Padding(
             padding: MySpacing.nBottom(24),
-            child: userDetail(),
+            child: Column(
+              children: [
+                userDetail(),
+                if (controller.genkitServiceAvailable)
+                  Padding(
+                    padding: MySpacing.top(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.smart_toy, size: 16, color: Colors.green),
+                        MySpacing.width(4),
+                        MyText.bodySmall('AI Assistant Available', color: Colors.green, fontWeight: 600),
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: MySpacing.top(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.smart_toy, size: 16, color: Colors.orange),
+                        MySpacing.width(4),
+                        MyText.bodySmall('AI Assistant Offline', color: Colors.orange, fontWeight: 600),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
           Divider(height: 36),
           Padding(
@@ -183,6 +211,11 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               minLines: 1,
               textInputAction: TextInputAction.go,
               controller: controller.messageController,
+              onFieldSubmitted: (value) {
+                if (value.trim().isNotEmpty && !controller.isLoading) {
+                  controller.sendMessage();
+                }
+              },
               clipBehavior: Clip.antiAliasWithSaveLayer,
               style: MyTextStyle.bodyMedium(fontWeight: 600),
               decoration: InputDecoration(
@@ -205,8 +238,17 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
         ),
         MyContainer(
           paddingAll: 12,
-          onTap: () => controller.sendMessage(),
-          child: Icon(LucideIcons.send, size: 20),
+          onTap: controller.isLoading ? null : () => controller.sendMessage(),
+          child: controller.isLoading 
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: contentTheme.onPrimary,
+                ),
+              )
+            : Icon(LucideIcons.send, size: 20),
         ),
       ],
     );

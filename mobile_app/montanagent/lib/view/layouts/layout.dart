@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../theme/index.dart';
-import '../../../helpers/widgets/my_responsive.dart';
+import '../../helpers/widgets/my_responsive.dart';
 import 'left_bar.dart';
 import 'right_bar.dart';
 import 'top_bar.dart';
@@ -31,7 +30,7 @@ class Layout extends StatelessWidget {
                   // Main Content
                   Expanded(
                     child: Container(
-                      color: theme.scaffoldBackgroundColor,
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       child: child ?? Container(),
                     ),
                   ),

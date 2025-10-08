@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../theme/index.dart';
+import '../../helpers/widgets/my_spacing.dart';
+import '../../helpers/widgets/my_text.dart';
+import '../../helpers/widgets/my_card.dart';
 
 class RightBar extends StatelessWidget {
   const RightBar({super.key});
@@ -14,9 +16,9 @@ class RightBar extends StatelessWidget {
           // Header
           Container(
             padding: MySpacing.all(24),
-            child: MyText.titleMedium(
+            child:             MyText.titleMedium(
               'Activity',
-              fontWeight: 600,
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
 
@@ -86,7 +88,7 @@ class RightBar extends StatelessWidget {
               children: [
                 MyText.bodyMedium(
                   title,
-                  fontWeight: 500,
+                  style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 MyText.bodySmall(
                   time,

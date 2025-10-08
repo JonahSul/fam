@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../theme/index.dart';
+import 'my_text.dart';
+
+class MyBreadcrumbItem {
+  final String name;
+  final bool active;
+
+  MyBreadcrumbItem({required this.name, this.active = false});
+}
 
 class MyBreadcrumb extends StatelessWidget {
   final List<MyBreadcrumbItem> children;
 
-  const MyBreadcrumb({super.key, required this.children});
+  const MyBreadcrumb({
+    super.key,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,34 +22,24 @@ class MyBreadcrumb extends StatelessWidget {
       children: children.asMap().entries.map((entry) {
         final index = entry.key;
         final item = entry.value;
-
+        
         return Row(
           children: [
-            if (index > 0) ...[
-              Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
-              ),
-              MySpacing.width(8),
-            ],
             MyText.bodySmall(
               item.name,
-              color: item.active
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
-              fontWeight: item.active ? 600 : 400,
+              style: TextStyle(
+                fontWeight: item.active ? FontWeight.w600 : FontWeight.w400,
+                color: item.active ? Colors.blue : Colors.grey,
+              ),
             ),
+            if (index < children.length - 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: MyText.bodySmall('/', color: Colors.grey),
+              ),
           ],
         );
       }).toList(),
     );
   }
-}
-
-class MyBreadcrumbItem {
-  final String name;
-  final bool active;
-
-  const MyBreadcrumbItem({required this.name, this.active = false});
 }
