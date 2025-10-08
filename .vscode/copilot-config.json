@@ -2,7 +2,7 @@
   "mcpServers": {
     "fam": {
       "command": "node",
-      "args": ["/Users/jonahs/Documents/00_Workspace/fam/build/index.js"],
+      "args": ["/workspaces/namontana-fam/mcp-tool/build/index.js"],
       "env": {}
     }
   }

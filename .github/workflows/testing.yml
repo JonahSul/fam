@@ -1,0 +1,248 @@
+name: 🧪 Comprehensive Testing
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**', 'hotfix/**' ]
+    paths:
+      - 'mobile_app/montanagent/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'mobile_app/montanagent/**'
+  schedule:
+    # Run tests every day at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  FLUTTER_VERSION: '3.35.4'
+  WORKING_DIRECTORY: ./mobile_app/montanagent
+
+jobs:
+  # Unit Tests
+  unit-tests:
+    name: 🔬 Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🧪 Run unit tests
+        run: |
+          flutter test \
+            --coverage \
+            --test-randomize-ordering-seed random \
+            --reporter github \
+            test/unit/
+
+      - name: 📊 Generate coverage report
+        run: |
+          # Install lcov for coverage reporting
+          sudo apt-get update
+          sudo apt-get install -y lcov
+          
+          # Generate HTML coverage report
+          genhtml coverage/lcov.info -o coverage/html
+          
+          # Generate coverage summary
+          lcov --summary coverage/lcov.info
+
+      - name: 📤 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ${{ env.WORKING_DIRECTORY }}/coverage/
+          retention-days: 7
+
+      - name: 📊 Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
+          flags: unit-tests
+          name: unit-tests-coverage
+
+  # Widget Tests
+  widget-tests:
+    name: 🎨 Widget Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🎨 Run widget tests
+        run: |
+          flutter test \
+            --coverage \
+            --test-randomize-ordering-seed random \
+            --reporter github \
+            test/widget/
+
+      - name: 📊 Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
+          flags: widget-tests
+          name: widget-tests-coverage
+
+  # Integration Tests
+  integration-tests:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔗 Run integration tests
+        run: |
+          flutter test \
+            --coverage \
+            --test-randomize-ordering-seed random \
+            --reporter github \
+            integration_test/
+
+      - name: 📊 Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
+          flags: integration-tests
+          name: integration-tests-coverage
+
+  # Performance Tests
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: ⚡ Run performance tests
+        run: |
+          flutter test \
+            --reporter github \
+            test/performance/
+
+      - name: 📊 Benchmark app size
+        run: |
+          flutter build web --release
+          echo "## 📊 Build Size Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web | $(du -sh build/web | cut -f1) |" >> $GITHUB_STEP_SUMMARY
+
+  # Test Matrix for Multiple Flutter Versions
+  compatibility-tests:
+    name: 🔄 Compatibility Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flutter-version: ['3.22.0', '3.35.4']
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🧪 Run compatibility tests
+        run: flutter test --reporter github
+
+  # Test Results Summary
+  test-summary:
+    name: 📋 Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, widget-tests, integration-tests, performance-tests, compatibility-tests]
+    if: always()
+    
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage/
+
+      - name: 📊 Create test summary
+        run: |
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Widget Tests | ${{ needs.widget-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance Tests | ${{ needs.performance-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Compatibility Tests | ${{ needs.compatibility-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [View detailed coverage report](https://codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔔 Notify test results
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '🚨 Test suite failed for MontaNAgent!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
