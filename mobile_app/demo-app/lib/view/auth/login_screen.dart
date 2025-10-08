@@ -120,8 +120,10 @@ class _LoginScreenState extends State<LoginScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      MyText.bodyMedium("Don't have an account? ",
-                          fontWeight: 600, muted: true),
+                      Flexible(
+                        child: MyText.bodyMedium("Don't have an account? ",
+                            fontWeight: 600, muted: true),
+                      ),
                       InkWell(
                         onTap: () => controller.goToRegisterScreen(),
                         child: MyText.bodyMedium("Sign Up",
